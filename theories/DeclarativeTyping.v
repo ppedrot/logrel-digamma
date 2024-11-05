@@ -545,7 +545,8 @@ Section LConTranslation.
       induction IHA ; try now econstructor.
       intros l' f.
       case (decidInLCon l'.(pi1) n) ; intro H.
-      + induction H ; [eapply IHIHA1 | eapply IHIHA2 ] ; now eapply LCon_le_in_LCon.
+      + eapply IHIHA1 ; now eapply LCon_le_in_LCon.
+      + eapply IHIHA2 ; now eapply LCon_le_in_LCon.
       + unshelve eapply ϝwfType ; try assumption.
         * eapply IHIHA1 ; eapply LCon_le_up ; assumption.
         * eapply IHIHA2 ; eapply LCon_le_up ; assumption.
@@ -553,7 +554,8 @@ Section LConTranslation.
       induction IHt ; try now econstructor.
       intros l' f.
       case (decidInLCon l'.(pi1) n) ; intro H.
-      + induction H ; [eapply IHIHt1 | eapply IHIHt2 ] ; now eapply LCon_le_in_LCon.
+      + eapply IHIHt1 ; now eapply LCon_le_in_LCon.
+      + eapply IHIHt2 ; now eapply LCon_le_in_LCon.
       + unshelve eapply ϝwfTerm ; try assumption.
         * eapply IHIHt1 ; eapply LCon_le_up ; assumption.
         * eapply IHIHt2 ; eapply LCon_le_up ; assumption.
@@ -561,7 +563,8 @@ Section LConTranslation.
       induction IHAB ; try now econstructor.
       intros l' f.
       case (decidInLCon l'.(pi1) n) ; intro H.
-      + induction H ; [eapply IHIHAB1 | eapply IHIHAB2 ] ; now eapply LCon_le_in_LCon.
+      + eapply IHIHAB1 ; now eapply LCon_le_in_LCon.
+      + eapply IHIHAB2 ; now eapply LCon_le_in_LCon.
       + unshelve eapply ϝTypeConv ; try assumption.
         * eapply IHIHAB1 ; eapply LCon_le_up ; assumption.
         * eapply IHIHAB2 ; eapply LCon_le_up ; assumption.
@@ -569,7 +572,8 @@ Section LConTranslation.
       induction IHtu ; try now econstructor.
       intros l' f.
       case (decidInLCon l'.(pi1) n) ; intro H.
-      + induction H ; [eapply IHIHtu1 | eapply IHIHtu2 ] ; now eapply LCon_le_in_LCon.
+      + eapply IHIHtu1 ; now eapply LCon_le_in_LCon.
+      + eapply IHIHtu2 ; now eapply LCon_le_in_LCon.
       + unshelve eapply ϝTermConv ; try assumption.
         * eapply IHIHtu1 ; eapply LCon_le_up ; assumption.
         * eapply IHIHtu2 ; eapply LCon_le_up ; assumption.

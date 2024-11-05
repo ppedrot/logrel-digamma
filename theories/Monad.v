@@ -131,8 +131,52 @@ Inductive DTree (k : wfLCon) : Type :=
   DTree (k ,,l (ne, false)) ->
   DTree k.
 
-Inductive over_tree (k k' : wfLCon) :
-  DTree k -> Type :=
+Fixpoint DTree_Ltrans (k k' : wfLCon) (f : k' ≤ε k) (d : DTree k) : DTree k'.
+Proof.
+  refine (match d with
+          | leaf _ => leaf _
+          | @ϝnode _ n ne dt df => _
+          end).
+  destruct (decidInLCon k' n) as [ Hint | Hinf | Hnotin].
+  - refine (DTree_Ltrans (k,,l (ne, true)) k' _ dt).
+    now eapply LCon_le_in_LCon.
+  - refine (DTree_Ltrans (k,,l (ne, false)) k' _ df).
+    now eapply LCon_le_in_LCon.
+  - refine (@ϝnode _ n Hnotin _ _).
+    + unshelve eapply (DTree_Ltrans _ _ _ dt).
+      now eapply LCon_le_up.
+    + unshelve eapply (DTree_Ltrans _ _ _ df).
+      now eapply LCon_le_up.
+Defined.
+
+Fixpoint DTree_fusion (k : wfLCon) (d d' : DTree k) : DTree k.
+Proof.
+  refine (match d with
+          | leaf _ => d'
+          | @ϝnode _ n ne dt df => @ϝnode _ n ne _ _
+          end).
+  - refine (DTree_fusion _ dt _).
+    unshelve eapply (DTree_Ltrans _ _ _ d').
+    eapply LCon_le_step ; now apply wfLCon_le_id.
+  - refine (DTree_fusion _ df _).
+    unshelve eapply (DTree_Ltrans _ _ _ d').
+    eapply LCon_le_step ; now apply wfLCon_le_id.
+Defined.
+
+
+Fixpoint over_tree (k k' : wfLCon) (d : DTree k) : SProp :=
+  match d with
+  | leaf _ => k' ≤ε k
+  | @ϝnode _ n ne kt kf =>
+      match (decidInLCon k' n) with
+      | or_inltrue H => over_tree (k ,,l (ne, true)) k' kt
+      | or_inlfalse H => over_tree (k ,,l (ne, false)) k' kf
+      | or_notinl _ => SFalse
+      end
+  end.
+
+(*Inductive over_tree (k k' : wfLCon) :
+  DTree k -> SProp :=
 | over_leaf : k' ≤ε k -> over_tree k k' (leaf k)
 | over_nodeT {n} {ne : not_in_LCon (pi1 k) n} kt kf :
   in_LCon k' n true ->
@@ -142,9 +186,71 @@ Inductive over_tree (k k' : wfLCon) :
   in_LCon k' n false ->
   over_tree (k ,,l (ne, false)) k' kf ->
   over_tree k k' (ϝnode (ne := ne) k kt kf).
+*)
 
-Lemma over_tree_le k k' d : over_tree k k' d -> k' ≤ε k.
+Lemma over_tree_le {k k' d} : over_tree k k' d -> k' ≤ε k.
 Proof.
-  induction 1 as [ | ???????? IH | ???????? IH] ; [assumption | | ].
-  all: exact (IH •ε (LCon_le_step _ (wfLCon_le_id _))).
+  induction d as [ | k n ne kt IHt kf IHf] ; cbn ; intros H ; auto.
+  destruct (decidInLCon k' n).
+  - exact ((IHt H) •ε (LCon_le_step _ (wfLCon_le_id _))).
+  - exact ((IHf H) •ε (LCon_le_step _ (wfLCon_le_id _))).
+  - now inversion H.
 Qed.
+
+Lemma over_tree_LTrans (k k' k'' : wfLCon) (f : k' ≤ε k) (d : DTree k) :
+  over_tree k' k'' (DTree_Ltrans k k' f d) -> over_tree k k'' d.
+Proof.
+  intros Hyp ; assert (f' : k'' ≤ε k') by now eapply over_tree_le.
+  revert k' k'' f f' Hyp ; induction d as [  | k n ne kt IHt kf IHf] ; cbn ; intros k' k'' f f' Hyp.
+  - eapply wfLCon_le_trans ; eassumption.
+  - destruct (decidInLCon k' n).
+    + destruct (decidInLCon k'' n).
+      * eapply IHt ; eassumption.
+      * exfalso.
+        assert (H := uniqueinLCon k''.(pi2) (f' _ _ i) i0) ; now inversion H.
+      * exfalso.
+        eapply notinLConnotinLCon ; eauto.
+    + destruct (decidInLCon k'' n).
+      * exfalso.
+        assert (H := uniqueinLCon k''.(pi2) (f' _ _ i) i0) ; now inversion H.
+      * eapply IHf ; eassumption.
+      * exfalso.
+        eapply notinLConnotinLCon ; eauto.
+    + cbn in * ; destruct (decidInLCon k'' n).
+      * eapply IHt ; [ | eassumption].
+        eapply wfLCon_le_trans ; [ eapply LCon_le_in_LCon ; eassumption | now eapply (idε _)].
+      * eapply IHf ; [ | eassumption].
+        eapply wfLCon_le_trans ; [ eapply LCon_le_in_LCon ; eassumption | now eapply (idε _)].
+      * assumption.
+Qed.
+
+      
+Lemma over_tree_fusion_l k k' d d' :
+  over_tree k k' (DTree_fusion k d d') ->
+  over_tree k k' d.
+Proof.
+  revert d' ; induction d as [ | k n ne kt IHt kf IHf] ; intros d' Hov.
+  - eapply over_tree_le ; eassumption.
+  - cbn in * ; subst.
+    destruct (decidInLCon k' n).
+    + eapply IHt ; eassumption.
+    + eapply IHf ; eassumption.
+    + assumption.
+Qed.
+
+
+Lemma over_tree_fusion_r k k' d d' :
+  over_tree k k' (DTree_fusion k d d') ->
+  over_tree k k' d'.
+Proof.
+  revert d' ; induction d as [ | k n ne kt IHt kf IHf] ; intros d' Hov.
+  - eassumption.
+  - cbn in * ; subst.
+    destruct (decidInLCon k' n).
+    + eapply over_tree_LTrans, IHt ; eassumption.
+    + eapply over_tree_LTrans, IHf ; eassumption.
+    + now inversion Hov.
+Qed.
+
+Arguments over_tree_fusion_l [_ _ _ _] _.
+Arguments over_tree_fusion_r [_ _ _ _] _.

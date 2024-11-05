@@ -5,22 +5,29 @@ From LogRel Require Import Utils.
 
 Notation LCon := (list (prod nat bool)).
 
-Inductive in_LCon : LCon -> nat -> bool -> Prop :=
+Inductive in_LCon : LCon -> nat -> bool -> SProp :=
 | in_here_l (l : LCon) {n b} : in_LCon (cons (n,b) l) n b
 | in_there_l {l : LCon} {n b d} : in_LCon l n b -> in_LCon (cons d l) n b.
 
 
-Inductive not_in_LCon : LCon -> nat -> Prop :=
+Inductive not_in_LCon : LCon -> nat -> SProp :=
 | not_in_nil : forall n, not_in_LCon nil n
 | not_in_there : forall {l n m b}, ((n = m) -> False) -> not_in_LCon l n
                                  -> not_in_LCon (cons (m,b) l) n.
 
-Inductive wf_LCon : LCon -> Type :=
+Inductive wf_LCon : LCon -> SProp :=
 | wf_nil : wf_LCon nil
 | wf_cons : forall {l n b}, wf_LCon l -> not_in_LCon l n -> wf_LCon (cons (n,b) l).
 
+Inductive SFalse : SProp := .
 
+Inductive Sor (A B : SProp) : SProp :=  Sinl : A -> Sor A B | Sinr : B -> Sor A B.
 
+Inductive Ssig (A : Type) (P : A -> SProp) : Type :=
+  Sexist : forall x : A, P x -> Ssig A P.
+
+Arguments Ssig [A]%type_scope P%type_scope.
+Arguments Sexist [A]%type_scope P%function_scope x _.
 
 Fixpoint nSucc (n : nat) (t : term) : term :=
   match n with
@@ -45,6 +52,7 @@ Coercion pi1 : wfLCon >-> LCon.
 Lemma notinLConnotinLCon {l n b} : not_in_LCon l n -> in_LCon l n b -> False.
 Proof.
   intros notinl inl.
+  enough (H : SFalse) by inversion H.
   induction inl.
   - inversion notinl ; subst.
     easy.
@@ -79,51 +87,102 @@ Qed.
 Lemma uniqueinLCon {l n b b'} : wf_LCon l -> in_LCon l n b -> in_LCon l n b' -> b = b'.
 Proof.
   intros wfl inl inl'.
-  induction wfl.
-  - now inversion inl.
-  - inversion inl ; subst.
-    + inversion inl' ; subst ; trivial.
-      exfalso.
-      exact (notinLConnotinLCon n1 H3).
-    + inversion inl' ; subst.
-      * exfalso ; exact (notinLConnotinLCon n1 H3).
-      * exact (IHwfl H3 H4).
+  destruct b ; destruct b' ; auto.
+  all: enough (H : SFalse) by inversion H.
+  - revert inl inl' ; induction wfl ; intros.
+    + now inversion inl.
+    + inversion inl ; subst.
+      * inversion inl' ; subst ; trivial.
+        exfalso.
+        exact (notinLConnotinLCon n1 H3).
+      * inversion inl' ; subst.
+        -- exfalso ; exact (notinLConnotinLCon n1 H3).
+        -- exact (IHwfl H3 H4).
+  - revert inl inl' ; induction wfl ; intros.
+    + now inversion inl.
+    + inversion inl ; subst.
+      * inversion inl' ; subst ; trivial.
+        exfalso.
+        exact (notinLConnotinLCon n1 H3).
+      * inversion inl' ; subst.
+        -- exfalso ; exact (notinLConnotinLCon n1 H3).
+        -- exact (IHwfl H3 H4).
 Qed.
 
-Fixpoint decidInLCon l n :
-  (in_LCon l n true) + (in_LCon l n false) + (not_in_LCon l n).
+Inductive or_inLCon l n : Type :=
+| or_inltrue : in_LCon l n true -> or_inLCon l n
+| or_inlfalse : in_LCon l n false -> or_inLCon l n
+| or_notinl : not_in_LCon l n -> or_inLCon l n.
+Arguments or_inltrue [_ _] _.
+Arguments or_inlfalse [_ _] _.
+Arguments or_notinl [_ _] _.
+
+Fixpoint decidInLCon l n : or_inLCon l n .
 Proof.
   unshelve refine (match l with
                    | nil => _
                    | cons (m, b) q => _
                    end).
-  - right.
-    now econstructor.
+  - econstructor 3 ; now econstructor.
   - unshelve refine
       (match (decidInLCon q n) with
-       | inl IHl => _
-       | inr IHl => _
+       | or_inltrue H => _
+       | or_inlfalse H => _ 
+       | or_notinl H => _
        end).
-    + unshelve refine
-      (match IHl with
-       | inl IHl => _
-       | inr IHl => _
-       end).
-      * left ; left ; now econstructor.
-      * left ; right ; now econstructor.
+    + econstructor 1. now econstructor.
+    + econstructor 2 ; now econstructor.
     + case (eq_nat_decide n m).
       * intro neqm.
         rewrite <- (proj1 (eq_nat_is_eq n m) neqm).
         case b.
-        -- left ; left ; now econstructor.
-        -- left ; right ; now econstructor.
+        -- econstructor 1 ; now econstructor.
+        -- econstructor 2 ; now econstructor.
       * intro noteq.
-        right.
+        econstructor 3.
         econstructor ; try assumption.
         intro neqm ; rewrite neqm in noteq.
         eapply noteq.
         exact (eq_nat_refl _).
 Defined.
+
+Lemma decidInLCon_true (l : wfLCon) n (Hin: in_LCon l n true) :
+  decidInLCon l n = or_inltrue Hin.
+Proof.
+  destruct (decidInLCon l n).
+  + reflexivity.
+  + exfalso.
+    assert (H := uniqueinLCon l.(pi2) Hin i) ; now inversion H.
+  + exfalso.
+    now eapply notinLConnotinLCon.
+Qed.
+
+Lemma decidInLCon_false (l : wfLCon) n (Hin: in_LCon l n false) :
+  decidInLCon l n = or_inlfalse Hin.
+Proof.
+  destruct (decidInLCon l n).
+  + exfalso.
+    assert (H := uniqueinLCon l.(pi2) Hin i) ; now inversion H.
+  + reflexivity.
+  + exfalso.
+    now eapply notinLConnotinLCon.
+Qed.
+
+Lemma decidInLCon_notinLCon (l : wfLCon) n (Hin: not_in_LCon l n) :
+  decidInLCon l n = or_notinl Hin.
+Proof.
+  destruct (decidInLCon l n).
+  + exfalso.
+    now eapply notinLConnotinLCon.
+  + exfalso.
+    now eapply notinLConnotinLCon.
+  + reflexivity. 
+Qed.
+
+Arguments decidInLCon_true [_ _] _.
+Arguments decidInLCon_false [_ _] _.
+Arguments decidInLCon_notinLCon [_ _] _.
+
 (*  induction l.
   - right.
     now econstructor.
@@ -154,15 +213,12 @@ Proof.
   exact (pi2 l).
 Defined.
 
-Definition wfLCons' (l : wfLCon) {n : nat} (d : (not_in_LCon (pi1 l) n) × bool) : wfLCon
-  := let (ne,b) := d in wfLCons l ne b.
+Notation " l ',,l' ( ne , b ) " := (wfLCons l ne b) (at level 20, ne, b at next level).
 
-Notation " l ',,l' d " := (wfLCons' l d) (at level 20, d at next level).
-
-Definition LCon_le (l l' : LCon) : Type :=
+Definition LCon_le (l l' : LCon) : SProp :=
   forall n b, in_LCon l' n b -> in_LCon l n b.
 
-Definition wfLCon_le (l l' : wfLCon) : Type :=
+Definition wfLCon_le (l l' : wfLCon) : SProp :=
   LCon_le (pi1 l) (pi1 l').
 
 Notation " l ≤ε l' " := (wfLCon_le l l') (at level 40).
@@ -205,12 +261,9 @@ Proof.
   - exact inl.
 Qed.
 
-Definition AllInLCon (n : nat) (l : wfLCon) : Type :=
-  forall (m : nat), m < n -> (in_LCon l m true) + (in_LCon l m false).
+Definition AllInLCon (n : nat) (l : wfLCon) : SProp :=
+  forall (m : nat), m < n -> Sor (in_LCon l m true) (in_LCon l m false).
 
-
-Axiom AllInLCon_Irrel : forall n wl (ne ne' : AllInLCon n wl), ne = ne'.
-Axiom wfLCon_le_Irrel : forall wl wl' (ne ne' : wl' ≤ε wl), ne = ne'.
 
 
 Lemma AllInLCon_le (n m : nat) (ninfm : n <= m) (l : wfLCon) :
@@ -229,11 +282,11 @@ Proof.
   - now eapply PeanoNat.lt_n_Sm_le.
   - intro minfn ; clear minfSn.
     now eapply allinl.
-  - intro eq.
-    rewrite eq.
-    induction b.
+  - intro eq ; subst.
+    destruct b.
     + now left.
     + now right.
+      
 Qed.
   
 
@@ -241,9 +294,9 @@ Fixpoint Lack_n (l : wfLCon) (n : nat) : list nat :=
   match n with
   | 0 => nil
   | S k => match decidInLCon l k with
-            | inl a => Lack_n l k
-            | inr b => cons k (Lack_n l k)
-           end
+             | or_notinl H => cons k (Lack_n l k)
+             | _ =>  Lack_n l k
+             end
   end.
 
 Fixpoint In {A : Type} (a : A) (l : list A) {struct l} : Type :=
@@ -276,6 +329,8 @@ Proof.
     destruct (decidInLCon l n) ; fold Lack_n in X.
     + cbn in *.
       now eapply IHn.
+    + cbn in *.
+      now eapply IHn.
     + destruct X.
       * now rewrite <- e.
       * now eapply IHn.
@@ -290,6 +345,9 @@ Proof.
   - intro inm.
     cbn in *.
     destruct (decidInLCon l n).
+    + etransitivity.
+      now eapply IHn.
+      now eapply Nat.lt_succ_diag_r.
     + etransitivity.
       now eapply IHn.
       now eapply Nat.lt_succ_diag_r.
@@ -314,12 +372,15 @@ Proof.
     + eapply Arith_base.lt_S_n_stt in l0.
       destruct (decidInLCon l n).
       * now eapply IHn.
+      * now eapply IHn.
       * right.
         now eapply IHn.
     + injection e ; intros ; subst ; clear e.
       destruct (decidInLCon l n).
       * exfalso.
-        destruct s ; now eapply notinLConnotinLCon.
+        now eapply notinLConnotinLCon.
+      * exfalso.
+        now eapply notinLConnotinLCon.
       * left ; reflexivity.
 Qed.
       
@@ -334,8 +395,7 @@ Proof.
     pose proof (notinl' := Lack_n_notinLCon _ _ _ inm).
     eapply notinLCon_Lack_n ; try eassumption.
     destruct (decidInLCon l m) ; try assumption.
-    exfalso.
-    destruct s ; eapply notinLConnotinLCon ; try eassumption.
+    all: exfalso ; eapply notinLConnotinLCon ; try eassumption.
     all: now eapply f.
 Qed.
 
@@ -348,6 +408,7 @@ Proof.
     inversion ink.
   - cbn.
     destruct (decidInLCon l n).
+    + now eapply IHn, Nat.lt_le_incl, (proj1 (Nat.le_succ_l n m)).
     + now eapply IHn, Nat.lt_le_incl, (proj1 (Nat.le_succ_l n m)).
     + intros k ink.
       destruct ink.
@@ -368,10 +429,12 @@ Proof.
   - cbn in *.
     destruct (decidInLCon l 0).
     + exfalso ; now inversion Heq.
+    + exfalso ; now inversion Heq.
     + now inversion Heq.
   - cbn in *.
     destruct (decidInLCon l (S n)).
-    + destruct s ; exfalso ; eapply notinLConnotinLCon ; eassumption.
+    + exfalso ; eapply notinLConnotinLCon ; eassumption.
+    + exfalso ; eapply notinLConnotinLCon ; eassumption.
     + now inversion Heq.
 Qed.
 
@@ -391,7 +454,7 @@ Proof.
     destruct l as [l wfl].
     cbn in *.
     remember (decidInLCon l n) as rem.
-    destruct rem as [ [s | s] | s].
+    destruct rem as [ s | s | s].
     + cbn in *.
       subst. now eapply IHn.
     + subst. now eapply IHn.
@@ -414,6 +477,7 @@ Proof.
         -- eapply IHn.
 Admitted.     
 
+Axiom todo : False.
   
 Lemma Lack_nil_AllInLCon (n : nat) (l : wfLCon) :
   Lack_n l n = nil -> AllInLCon n l.
@@ -421,18 +485,21 @@ Proof.
   induction n.
   - intros eq0 m minf0.
     exfalso.
-    now inversion minf0.
+    now eapply Nat.nle_succ_0. 
   - intro Hyp ; cbn in *.
     destruct (decidInLCon l n).
     + intros m minfn.
-      case (Compare_dec.le_lt_eq_dec _ _ minfn).
-      * intros hyp.
-        eapply IHn.
-        assumption.
-        now eapply Arith_base.lt_S_n_stt.
-      * intro eqSnm.
-        injection eqSnm ; intros eqnm.
-        now rewrite eqnm.
+      destruct (Compare_dec.le_lt_eq_dec _ _ minfn) as [ | eqSnm].
+      * apply (IHn Hyp).
+        now apply Arith_base.lt_S_n_stt.
+      * injection eqSnm ; intros eqnm.
+        now subst.
+    + intros m minfn.
+      destruct (Compare_dec.le_lt_eq_dec _ _ minfn) as [ | eqSnm].
+      * apply (IHn Hyp).
+        now apply Arith_base.lt_S_n_stt.
+      * injection eqSnm ; intros eqnm.
+        now subst.
     + exfalso.
       now inversion Hyp.
 Qed.
@@ -513,7 +580,7 @@ Lemma newElt_newElt (l : LCon) (n : nat) :
   not_in_LCon l (LCon_newElt l).
 Proof.
   pose proof (newElt_newElt_aux l 0).
-  now rewrite Nat.max_0_r in H.
+  now erewrite Nat.max_0_r in H.
 Qed.
 
 Fixpoint Max_Bar_aux
@@ -564,6 +631,8 @@ Definition Max_Bar (wl : wfLCon) (n : nat)
   (P: forall wl' : wfLCon, wl' ≤ε wl -> AllInLCon n wl' -> nat) : nat :=
   Max_Bar_aux wl n (Lack_n wl n) eq_refl P.
 
+
+(*
 Lemma Max_Bar_aux_le (wl : wfLCon) (n : nat)
   (q : list nat)
   (e : q = Lack_n wl n)
@@ -830,3 +899,4 @@ Proof.
   now eapply Max_Bar_Bar_lub_aux.
 Qed.
 
+*)
