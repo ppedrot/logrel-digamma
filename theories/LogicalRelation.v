@@ -281,7 +281,7 @@ Module PolyRedPack.
     shpRed {Δ k'} (ρ : Δ ≤ Γ) :
           forall (f : k' ≤ε k),
             [ |- Δ ]< k' > -> LRPack@{i} k' Δ shp⟨ρ⟩ ;
-    posRedTree {Δ k'} {a} (ρ : Δ ≤ Γ) :
+    posTree {Δ k'} {a} (ρ : Δ ≤ Γ) :
       forall (f : k' ≤ε k)
              (Hd : [ |-[ ta ] Δ ]< k' >)
              (ha : [ shpRed ρ f Hd |  Δ ||- a : shp⟨ρ⟩]< k' >),
@@ -290,7 +290,7 @@ Module PolyRedPack.
       forall (f : k' ≤ε k)
              (Hd : [ |-[ ta ] Δ ]< k' >)
              (ha : [ shpRed ρ f Hd |  Δ ||- a : shp⟨ρ⟩]< k' >),
-        forall {k''} (Ho : over_tree k' k'' (posRedTree ρ f Hd ha)),
+        forall {k''} (Ho : over_tree k' k'' (posTree ρ f Hd ha)),
           LRPack@{i} k'' Δ (pos[a .: (ρ >> tRel)]) ;
     posExt {Δ a b k'} (ρ : Δ ≤ Γ) :
       forall (f : k' ≤ε k)
@@ -298,7 +298,7 @@ Module PolyRedPack.
              (ha : [ shpRed ρ f Hd |  Δ ||- a : shp⟨ρ⟩]< k' >)
              (hb : [ shpRed ρ f Hd |  Δ ||- b : shp⟨ρ⟩]< k' >)
              (heq : [ shpRed ρ f Hd | Δ ||- a ≅ b : shp⟨ρ⟩ ]< k' >),
-      forall {k''} (Ho : over_tree k' k'' (posRedTree ρ f Hd ha)),
+      forall {k''} (Ho : over_tree k' k'' (posTree ρ f Hd ha)),
         [ (posRed ρ f Hd ha Ho) | Δ ||- (pos[a .: (ρ >> tRel)]) ≅ (pos[b .: (ρ >> tRel)]) ]< k'' > ;
       }.
 
@@ -321,7 +321,7 @@ Module PolyRedPack.
       forall (f : k' ≤ε k)
              (Hd : [ |-[ ta ] Δ ]< k' >)
              (ha : [ (PA.(shpRed) ρ) f Hd |  Δ ||- a : shp⟨ρ⟩]< k' >),
-      forall {k''} (Ho : over_tree k' k'' (PA.(posRedTree) ρ f Hd ha)),
+      forall {k''} (Ho : over_tree k' k'' (PA.(posTree) ρ f Hd ha)),
         LRPackAdequate@{i j} R (PA.(posRed) ρ f Hd ha Ho) ;
     }.
 
@@ -341,7 +341,7 @@ Module PolyRedEq.
       forall k' (f : k' ≤ε k)
              (Hd : [ |-[ ta ] Δ ]< k' >),
         [ PA.(PolyRedPack.shpRed) ρ f Hd | Δ ||- shp⟨ρ⟩ ≅ shp'⟨ρ⟩ ]< k' > ;
-    posRedTree {Δ k'} {a} (ρ : Δ ≤ Γ) :
+    posTree {Δ k'} {a} (ρ : Δ ≤ Γ) :
       forall (f : k' ≤ε k)
              (Hd : [ |-[ ta ] Δ ]< k' >)
              (ha : [ PA.(PolyRedPack.shpRed) ρ f Hd | Δ ||- a : shp⟨ρ⟩]< k' >),
@@ -350,8 +350,8 @@ Module PolyRedEq.
       forall (f : k' ≤ε k)
              (Hd : [ |-[ ta ] Δ ]< k' >)
              (ha : [ (PA.(PolyRedPack.shpRed) ρ) f Hd |  Δ ||- a : shp⟨ρ⟩]< k' >),
-      forall {k''} (Ho : over_tree k' k'' (PA.(PolyRedPack.posRedTree) ρ f Hd ha))
-             (Ho' : over_tree k' k'' (posRedTree ρ f Hd ha)),
+      forall {k''} (Ho : over_tree k' k'' (PA.(PolyRedPack.posTree) ρ f Hd ha))
+             (Ho' : over_tree k' k'' (posTree ρ f Hd ha)),
         [ PA.(PolyRedPack.posRed) ρ f Hd ha Ho | Δ ||- pos[a .: (ρ >> tRel)] ≅ pos'[a .: (ρ >> tRel)] ]< k'' > ;
     }.
 
@@ -429,19 +429,26 @@ Definition PiRedTyEq `{ta : tag}
 Module PiRedTyEq := ParamRedTyEq.
 Notation "[ Γ ||-Π A ≅ B | ΠA ]< k >" := (PiRedTyEq (k := k) (Γ:=Γ) (A:=A) ΠA B).
 
-(*
+
 Inductive isLRFun `{ta : tag} `{WfContext ta}
   `{WfType ta} `{ConvType ta} `{RedType ta} `{Typing ta} `{ConvTerm ta} `{ConvNeuConv ta}
-  {k : wfLCon} {Γ : context} {A : term} (ΠA : PiRedTy k Γ A) : term -> Type :=
+  {k : wfLCon} {Γ : context} {A : term} (ΠA : PiRedTy k Γ A)
+  (funTree : forall {Δ k'} {a} (ρ : Δ ≤ Γ) (f : k' ≤ε k)
+                    (Hd : [ |-[ ta ] Δ ]< k' >)
+                    (ha : [ ΠA.(PolyRedPack.shpRed) ρ f Hd | Δ ||- a : ΠA.(PiRedTy.dom)⟨ρ⟩]< k' >),
+      DTree k') : term -> Type :=
 | LamLRFun : forall A' t : term,
-  (forall {Δ} (ρ : Δ ≤ Γ) (h : [ |- Δ ]< k >) (domRed:= ΠA.(PolyRedPack.shpRed) ρ h),
-      [domRed | Δ ||- (PiRedTy.dom ΠA)⟨ρ⟩ ≅ A'⟨ρ⟩]< k >) ->
-  (forall {Δ a} (ρ : Δ ≤ Γ) (h : [ |- Δ ]< k >)
-    (ha : [ ΠA.(PolyRedPack.shpRed) ρ h | Δ ||- a : ΠA.(PiRedTy.dom)⟨ρ⟩ ]< k >),
-      [ΠA.(PolyRedPack.posRed) ρ h ha | Δ ||- t[a .: (ρ >> tRel)] : ΠA.(PiRedTy.cod)[a .: (ρ >> tRel)]]< k >) ->
-  isLRFun ΠA (tLambda A' t)
-| NeLRFun : forall f : term, [Γ |- f ~ f : tProd (PiRedTy.dom ΠA) (PiRedTy.cod ΠA)]< k > -> isLRFun ΠA f.
-*)
+    (forall {Δ k'} (ρ : Δ ≤ Γ) (f : k' ≤ε k) (h : [ |- Δ ]< k' >)
+            (domRed:= ΠA.(PolyRedPack.shpRed) ρ f h),
+        [domRed | Δ ||- (PiRedTy.dom ΠA)⟨ρ⟩ ≅ A'⟨ρ⟩]< k' >) ->
+    (forall {Δ k' a} (ρ : Δ ≤ Γ) (f : k' ≤ε k) (h : [ |- Δ ]< k' >)
+            (ha : [ ΠA.(PolyRedPack.shpRed) ρ f h | Δ ||- a : ΠA.(PiRedTy.dom)⟨ρ⟩ ]< k' >),
+      forall {k''} (Ho : over_tree k' k'' (ΠA.(PolyRedPack.posTree) ρ f h ha))
+             (Ho' : over_tree k' k'' (funTree ρ f h ha)),
+        [ΠA.(PolyRedPack.posRed) ρ f h ha Ho | Δ ||- t[a .: (ρ >> tRel)] : ΠA.(PiRedTy.cod)[a .: (ρ >> tRel)]]< k'' >) ->
+    isLRFun ΠA (@funTree) (tLambda A' t)
+| NeLRFun : forall f : term, [Γ |- f ~ f : tProd (PiRedTy.dom ΠA) (PiRedTy.cod ΠA)]< k > -> isLRFun ΠA (@funTree) f.
+
 Module PiRedTm.
 
   Record PiRedTm `{ta : tag} `{WfContext ta}
@@ -451,18 +458,18 @@ Module PiRedTm.
   : Type := {
     nf : term;
     red : [ Γ |- t :⤳*: nf : tProd ΠA.(PiRedTy.dom) ΠA.(PiRedTy.cod) ]< k >;
-    (*isfun : isLRFun ΠA nf;*)
     refl : [ Γ |- nf ≅ nf : tProd ΠA.(PiRedTy.dom) ΠA.(PiRedTy.cod) ]< k > ;
     appTree {Δ k'} {a} (ρ : Δ ≤ Γ) :
       forall (f : k' ≤ε k)
              (Hd : [ |-[ ta ] Δ ]< k' >)
              (ha : [ ΠA.(PolyRedPack.shpRed) ρ f Hd | Δ ||- a : ΠA.(PiRedTy.dom)⟨ρ⟩]< k' >),
         DTree k' ;
+    isfun : isLRFun ΠA (@appTree) nf;
     app {Δ a k'} (ρ : Δ ≤ Γ) :
       forall (f : k' ≤ε k)
              (Hd : [ |-[ ta ] Δ ]< k' >)
              (ha : [ ΠA.(PolyRedPack.shpRed) ρ f Hd |  Δ ||- a : ΠA.(PiRedTy.dom)⟨ρ⟩]< k' >),
-      forall {k''} (Ho : over_tree k' k'' (ΠA.(PolyRedPack.posRedTree) ρ f Hd ha))
+      forall {k''} (Ho : over_tree k' k'' (ΠA.(PolyRedPack.posTree) ρ f Hd ha))
              (Ho' : over_tree k' k'' (appTree ρ f Hd ha)),
         [ ΠA.(PolyRedPack.posRed) ρ f Hd ha Ho | Δ ||- tApp nf⟨ρ⟩ a : ΠA.(PiRedTy.cod)[a .: (ρ >> tRel)]]< k'' > ;
     eq {Δ a b k'} (ρ : Δ ≤ Γ) :
@@ -470,7 +477,7 @@ Module PiRedTm.
                (ha : [ ΠA.(PolyRedPack.shpRed) ρ f Hd |  Δ ||- a : ΠA.(PiRedTy.dom)⟨ρ⟩]< k' >)
                (hb : [ ΠA.(PolyRedPack.shpRed) ρ f Hd |  Δ ||- b : ΠA.(PiRedTy.dom)⟨ρ⟩]< k' >)
                (eq : [ ΠA.(PolyRedPack.shpRed) ρ f Hd | Δ ||- a ≅ b : ΠA.(PiRedTy.dom)⟨ρ⟩ ]< k' >),
-        forall {k''} (Ho : over_tree k' k'' (ΠA.(PolyRedPack.posRedTree) ρ f Hd ha))
+        forall {k''} (Ho : over_tree k' k'' (ΠA.(PolyRedPack.posTree) ρ f Hd ha))
                (Ho' : over_tree k' k'' (appTree ρ f Hd ha)),
           [ ΠA.(PolyRedPack.posRed) ρ f Hd ha Ho | Δ ||- tApp nf⟨ρ⟩ a ≅ tApp nf⟨ρ⟩ b : ΠA.(PiRedTy.cod)[a .: (ρ >> tRel)] ]< k'' > ;
     }.
@@ -500,7 +507,7 @@ Module PiRedTmEq.
     eqApp {Δ a k'} (ρ : Δ ≤ Γ) :
       forall (f : k' ≤ε k) (Hd : [ |-[ ta ] Δ ]< k' >)
              (ha : [ ΠA.(PolyRedPack.shpRed) ρ f Hd |  Δ ||- a : ΠA.(PiRedTy.dom)⟨ρ⟩]< k' >),
-      forall {k''} (Ho : over_tree k' k'' (ΠA.(PolyRedPack.posRedTree) ρ f Hd ha))
+      forall {k''} (Ho : over_tree k' k'' (ΠA.(PolyRedPack.posTree) ρ f Hd ha))
              (Ho' : over_tree k' k'' (eqTree ρ f Hd ha)),
         [ ΠA.(PolyRedPack.posRed) ρ f Hd ha Ho |
           Δ ||- tApp redL.(PiRedTm.nf)⟨ρ⟩ a ≅ tApp redR.(PiRedTm.nf)⟨ρ⟩ a :
@@ -530,25 +537,39 @@ Definition SigRedTyEq `{ta : tag}
   ParamRedTyEq (T:=tSig) Γ A B ΠA.
 
 Module SigRedTy := ParamRedTyPack.
-(*
+
 Inductive isLRPair `{ta : tag} `{WfContext ta}
   `{WfType ta} `{ConvType ta} `{RedType ta} `{Typing ta} `{ConvTerm ta} `{ConvNeuConv ta}
-  {k : wfLCon} {Γ : context} {A : term} (ΣA : SigRedTy k Γ A) : term -> Type :=
+  {k : wfLCon} {Γ : context} {A : term} (ΣA : SigRedTy k Γ A)
+  
+  : term -> Type :=
 | PairLRpair : forall (A' B' a b : term)
-  (rdom : forall {Δ} (ρ : Δ ≤ Γ) (h : [ |- Δ ]< k >),
-      [ΣA.(PolyRedPack.shpRed) ρ h | Δ ||- (SigRedTy.dom ΣA)⟨ρ⟩ ≅ A'⟨ρ⟩]< k >)
-  (rcod : forall {Δ a} (ρ : Δ ≤ Γ) (h : [ |- Δ ]< k >)
-    (ha : [ ΣA.(PolyRedPack.shpRed) ρ h | Δ ||- a : ΣA.(PiRedTy.dom)⟨ρ⟩ ]< k >),
-      [ΣA.(PolyRedPack.posRed) ρ h ha | Δ ||- (SigRedTy.cod ΣA)[a .: (ρ >> tRel)] ≅ B'[a .: (ρ >> tRel)]]< k >)
-  (rfst : forall {Δ} (ρ : Δ ≤ Γ) (h : [ |- Δ ]< k >),
-      [ΣA.(PolyRedPack.shpRed) ρ h | Δ ||- a⟨ρ⟩ : (SigRedTy.dom ΣA)⟨ρ⟩]< k >)
-  (rsnd : forall {Δ} (ρ : Δ ≤ Γ) (h : [ |- Δ ]< k >),
-      [ΣA.(PolyRedPack.posRed) ρ h (rfst ρ h) | Δ ||- b⟨ρ⟩ : (SigRedTy.cod ΣA)[a⟨ρ⟩ .: (ρ >> tRel)] ]< k >),
+  (rdom : forall {Δ k'} (ρ : Δ ≤ Γ) (f : k' ≤ε k) (h : [ |- Δ ]< k' >),
+      [ΣA.(PolyRedPack.shpRed) ρ f h | Δ ||- (SigRedTy.dom ΣA)⟨ρ⟩ ≅ A'⟨ρ⟩]< k' >)
+  (codTree : forall {Δ k'} (ρ : Δ ≤ Γ) (f : k' ≤ε k)
+                    (Hd : [ |-[ ta ] Δ ]< k' >)
+                    (ha : [ ΣA.(PolyRedPack.shpRed) ρ f Hd | Δ ||- a : ΣA.(PiRedTy.dom)⟨ρ⟩ ]< k' >),
+      DTree k')
+  (rcod : forall {Δ k'} (ρ : Δ ≤ Γ) (f : k' ≤ε k) (h : [ |- Δ ]< k' >)
+                 (ha : [ ΣA.(PolyRedPack.shpRed) ρ f h | Δ ||- a : ΣA.(PiRedTy.dom)⟨ρ⟩ ]< k' >),
+    forall {k''} (Ho : over_tree k' k'' (ΣA.(PolyRedPack.posTree) ρ f h ha))
+           (Ho' : over_tree k' k'' (codTree ρ f h ha)),
+      [ΣA.(PolyRedPack.posRed) ρ f h ha Ho | Δ ||- (SigRedTy.cod ΣA)[a .: (ρ >> tRel)] ≅ B'[a .: (ρ >> tRel)]]< k'' >)
+  (rfst : forall {Δ k'} (ρ : Δ ≤ Γ) (f : k' ≤ε k) (h : [ |- Δ ]< k' >),
+      [ΣA.(PolyRedPack.shpRed) ρ f h | Δ ||- a⟨ρ⟩ : (SigRedTy.dom ΣA)⟨ρ⟩]< k' >)
+  (rsndTree : forall {Δ k'} (ρ : Δ ≤ Γ) (f : k' ≤ε k)
+                     (Hd : [ |-[ ta ] Δ ]< k' >),
+      DTree k')
+  (rsnd : forall {Δ k'} (ρ : Δ ≤ Γ) (f : k' ≤ε k) (h : [ |- Δ ]< k' >),
+    forall {k''} (Ho : over_tree k' k'' (ΣA.(PolyRedPack.posTree) ρ f h (rfst ρ f h)))
+           (Ho' : over_tree k' k'' (rsndTree ρ f h)),
+      [ΣA.(PolyRedPack.posRed) ρ f h (rfst ρ f h) Ho | Δ ||- b⟨ρ⟩ : (SigRedTy.cod ΣA)[a⟨ρ⟩ .: (ρ >> tRel)] ]< k'' >),
 
   isLRPair ΣA (tPair A' B' a b)
 
-| NeLRPair : forall p : term, [Γ |- p ~ p : tSig (SigRedTy.dom ΣA) (SigRedTy.cod ΣA)]< k > -> isLRPair ΣA p.
-*)
+| NeLRPair : forall p : term, [Γ |- p ~ p : tSig (SigRedTy.dom ΣA) (SigRedTy.cod ΣA)]< k > ->
+                              isLRPair ΣA p.
+
 Module SigRedTm.
 
   Record SigRedTm `{ta : tag} `{WfContext ta}
@@ -558,7 +579,6 @@ Module SigRedTm.
   : Type := {
     nf : term;
     red : [ Γ |- t :⤳*: nf : ΣA.(outTy) ]< k >;
-    (*ispair : isLRPair ΣA nf;*)
     refl : [ Γ |- nf ≅ nf : ΣA.(outTy) ]< k > ;
     fstRed {Δ k'} (ρ : Δ ≤ Γ) :
       forall (f : k' ≤ε k) (Hd : [ |-[ ta ] Δ ]< k' >),
@@ -566,9 +586,10 @@ Module SigRedTm.
     sndTree {Δ k'} (ρ : Δ ≤ Γ) :
       forall (f : k' ≤ε k) (Hd : [ |-[ ta ] Δ ]< k' >),
         DTree k' ;
+    ispair : isLRPair ΣA nf;
     sndRed  {Δ} (ρ : Δ ≤ Γ) :
       forall k' (f : k' ≤ε k) (Hd : [ |-[ ta ] Δ ]< k' >),
-      forall {k''} (Ho : over_tree k' k'' (ΣA.(PolyRedPack.posRedTree) ρ f Hd _))
+      forall {k''} (Ho : over_tree k' k'' (ΣA.(PolyRedPack.posTree) ρ f Hd _))
       (Ho' : over_tree k' k'' (sndTree ρ f Hd)),
         [ ΣA.(PolyRedPack.posRed) ρ f Hd (fstRed ρ f Hd) Ho | Δ ||- tSnd nf⟨ρ⟩ : _]< k'' > ;
     }.
@@ -598,7 +619,7 @@ Module SigRedTmEq.
         DTree k' ;
     eqSnd {Δ k'} (ρ : Δ ≤ Γ) (f : k' ≤ε k) (Hd : [ |-[ ta ] Δ ]< k' >)
       (redfstL := redL.(SigRedTm.fstRed) ρ f Hd) :
-      forall {k''} (Ho : over_tree k' k'' (ΣA.(PolyRedPack.posRedTree) ρ f Hd _))
+      forall {k''} (Ho : over_tree k' k'' (ΣA.(PolyRedPack.posTree) ρ f Hd _))
              (Ho' : over_tree k' k'' (eqTree ρ f Hd)),
       [ ΣA.(PolyRedPack.posRed) ρ f Hd redfstL Ho | Δ ||-  tSnd redL.(SigRedTm.nf)⟨ρ⟩ ≅ tSnd redR.(SigRedTm.nf)⟨ρ⟩ : _]< k'' > ;
     }.
@@ -1042,7 +1063,7 @@ Section EmptyRedTmEq.
 
 End EmptyRedTmEq.
 Arguments EmptyRedTmEq {_ _ _ _ _ _ _ _ _ _}.
-Arguments EmptyPropEq {_ _ _}.
+Arguments EmptyPropEq {_ _}.
 End EmptyRedTmEq.
 
 Export EmptyRedTmEq(EmptyRedTmEq,Build_EmptyRedTmEq, EmptyPropEq).
@@ -1352,7 +1373,6 @@ Section MoreDefs.
     }.
   Arguments WTEq [_ _ _ _ _] _.
   Arguments WRedEq [_ _ _ _ _ _ _] _.
-
   
   Record WLogRelTm@{i j k l} (l : TypeLevel) wl Γ t A (wlrA : WLogRel@{i j k l} l wl Γ A) :=
     { WTTm : DTree wl ;
@@ -1423,7 +1443,7 @@ Section PolyRed.
       posTy : [Γ,, shp |- pos]< k > ;
       shpRed {Δ k'} (ρ : Δ ≤ Γ) (f : k' ≤ε k) :
       [ |- Δ ]< k' > -> [ LogRel@{i j k l} l | Δ ||- shp⟨ρ⟩ ]< k' > ;
-      posRedTree {Δ k'} {a} (ρ : Δ ≤ Γ) :
+      posTree {Δ k'} {a} (ρ : Δ ≤ Γ) :
          forall (f : k' ≤ε k)
              (Hd : [ |-[ ta ] Δ ]< k' >)
              (ha : [ shpRed ρ f Hd |  Δ ||- a : shp⟨ρ⟩]< k' >),
@@ -1432,7 +1452,7 @@ Section PolyRed.
          forall (f : k' ≤ε k)
                 (Hd : [ |-[ ta ] Δ ]< k' >)
                 (ha : [ shpRed ρ f Hd |  Δ ||- a : shp⟨ρ⟩]< k' >),
-         forall {k''} (Ho : over_tree k' k'' (posRedTree ρ f Hd ha)),
+         forall {k''} (Ho : over_tree k' k'' (posTree ρ f Hd ha)),
            [ LogRel@{i j k l} l | Δ ||- pos[a .: (ρ >> tRel)]]< k'' > ;
       posExt
         {Δ k' a b}
@@ -1441,7 +1461,7 @@ Section PolyRed.
         (ha : [ (shpRed ρ f Hd) | Δ ||- a : shp⟨ρ⟩ ]< k' >) :
         [ (shpRed ρ f Hd) | Δ ||- b : shp⟨ρ⟩]< k' > ->
         [ (shpRed ρ f Hd) | Δ ||- a ≅ b : shp⟨ρ⟩]< k' > ->
-        forall {k''} (Ho : over_tree k' k'' (posRedTree ρ f Hd ha)),
+        forall {k''} (Ho : over_tree k' k'' (posTree ρ f Hd ha)),
         [ (posRed ρ f Hd ha Ho) | Δ ||- (pos[a .: (ρ >> tRel)]) ≅ (pos[b .: (ρ >> tRel)]) ]< k'' > ;
     }.
   
@@ -1451,7 +1471,7 @@ Section PolyRed.
   Proof.
     unshelve econstructor; intros.
     - econstructor ; unshelve eapply PolyRedPack.shpAd. 4: eassumption. all: eauto.
-    - eapply PolyRedPack.posRedTree ; eauto.
+    - eapply PolyRedPack.posTree ; eauto.
     - econstructor. unshelve eapply PolyRedPack.posAd. 8: exact Ho. tea.
     - now eapply PolyRedPack.shpTy.
     - now eapply PolyRedPack.posTy.
@@ -1462,7 +1482,7 @@ Section PolyRed.
   Proof.
     unshelve econstructor.
     - now eapply shpRed.
-    - intros ; now eapply posRedTree.
+    - intros ; now eapply posTree.
     - intros; now eapply posRed.
     - now eapply shpTy. 
     - now eapply posTy.
@@ -1704,15 +1724,15 @@ Lemma EmptyRedEqInduction :
     {H4 : ConvNeuConv ta} {H5 : ConvTerm ta} {H6 : RedTerm ta} 
     (k : wfLCon) (Γ : context) (A : term) (NA : [Γ ||-Empty A]< k >)
     (P : forall t t0 : term, [Γ ||-Empty t ≅ t0 : A | NA]< k > -> Type)
-    (P0 : forall t t0 : term, EmptyPropEq Γ t t0 -> Type),
+    (P0 : forall t t0 : term, EmptyPropEq k Γ t t0 -> Type),
     (forall (t u nfL nfR : term) (redL : [Γ |-[ ta ] t :⤳*: nfL : tEmpty]< k >)
        (redR : [Γ |-[ ta ] u :⤳*: nfR : tEmpty]< k >) (eq : [Γ |-[ ta ] nfL ≅ nfR : tEmpty]< k >)
-       (prop : EmptyPropEq Γ nfL nfR),
+       (prop : EmptyPropEq k Γ nfL nfR),
         P0 nfL nfR prop -> P t u (Build_EmptyRedTmEq nfL nfR redL redR eq prop)) ->
     (forall (ne ne' : term) (r : [Γ ||-NeNf ne ≅ ne' : tEmpty]< k >),
         P0 ne ne' (EmptyRedTmEq.neReq r)) ->
     (forall (t t0 : term) (n : [Γ ||-Empty t ≅ t0 : A | NA]< k >), P t t0 n)
-      × (forall (t t0 : term) (n : EmptyPropEq Γ t t0), P0 t t0 n).
+      × (forall (t t0 : term) (n : EmptyPropEq k Γ t t0), P0 t t0 n).
 Proof.
   intros.
   split.

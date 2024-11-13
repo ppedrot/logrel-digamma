@@ -1,6 +1,6 @@
 Require Import PeanoNat.
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
-From LogRel Require Import Notations Utils BasicAst LContexts Context NormalForms Weakening GenericTyping LogicalRelation DeclarativeInstance.
+From LogRel Require Import Notations Utils BasicAst LContexts Context NormalForms Weakening GenericTyping Monad LogicalRelation DeclarativeInstance.
 From LogRel.LogicalRelation Require Import Induction ShapeView Reflexivity Irrelevance.
 
 Set Universe Polymorphism.
@@ -10,196 +10,17 @@ Context `{GenericTypingProperties}.
 
 Set Printing Primitive Projection Parameters.
 
-Set Printing Universes.
+(*Set Printing Universes.*)
 
-Lemma transEq@{i j k l} {wl Γ A B C lA lB lC} 
+ Lemma transEq@{i j k l} {wl Γ A B C lA lB} 
   {RA : [LogRel@{i j k l} lA | Γ ||- A]< wl >}
   {RB : [LogRel@{i j k l} lB | Γ ||- B]< wl >}
-  {RC : [LogRel@{i j k l} lC | Γ ||- C]< wl >}
   (RAB : [Γ ||-<lA> A ≅ B | RA]< wl >)
    (RBC : [Γ ||-<lB> B ≅ C | RB]< wl >) :
   [Γ ||-<lA> A ≅ C | RA]< wl >.
-Proof.
-  destruct RA as [pA lrA], RB as [pB lrB], RC as [pC lrC]; cbn in *.
-  set (sv := combine _ _ _ _ _ lrA lrB lrC (ShapeViewConv _ _ RAB) (ShapeViewConv _ _ RBC)).
-  revert lB B pB lrB lC C pC lrC RAB RBC sv.
-  induction lrA as [| |??? ΠA ΠAad ihdom ihcod| | |]; intros ??? lrB;
-  induction lrB as [|??? neB|??? ΠB ΠBad _ _| | |]; intros ??? lrC;
-  induction lrC as [| |??? ΠC ΠCad _ _| | |]; intros RAB RBC [].
-  - easy.
-  - destruct RAB as [tB red], RBC as [tC]; exists tC. 1,2: assumption.
-    etransitivity. 1: eassumption. destruct neB as [? red']. cbn in *.
-    unshelve erewrite (redtywf_det _ _ _ _ _ _ _ red red').
-    1,2 : eapply whnf_whne, ty_ne_whne. all: eassumption.
-  - destruct RAB as [domB codB redB ? domRedEqN domRedEq codRedEqN codRedEq], RBC as [domC codC redC ? domRedN' domRedEq' codRedN' codRedEq'].
-    destruct ΠB as [?? redB' ??? domRedBN domRedB codRedBN codRedB],
-        ΠC as [?? redC' ??? domRedCN domRedC codRedCN codRedC],
-          ΠBad as [domAdB codAdB], ΠCad as [domAdC codAdC]; cbn in *.
-    unshelve epose proof (eqΠB := redtywf_det _ _ _ _ _ _ _ redB' redB) ;
-    [ constructor | constructor | .. ].
-    injection eqΠB; intros eqcod eqdom; clear eqΠB;  subst. 
-    unshelve epose proof (eqΠC := redtywf_det _ _ _ _ _ _ _ redC' redC).
-    1,2 : constructor.
-    injection eqΠC; intros eqcod eqdom; clear eqΠC;  subst. 
-    assert (domRedAC : forall (Δ : context) (wl' : wfLCon) (ρ : Δ ≤ Γ)
-                              (τ : wl' ≤ε wl)
-                              (Ninfl : AllInLCon (PiRedTy.domN ΠA) wl')
-                              (Ninfl' : AllInLCon domRedBN wl')
-                              (Ninfl'' : AllInLCon domRedN' wl')
-                              (Ninfl''' : AllInLCon domRedCN wl')
-                              (Ninfl''' : AllInLCon domRedEqN wl')
-                              (h : [ |-[ ta ] Δ]< wl' >),
-      [PiRedTy.domRed ΠA ρ τ Ninfl h | Δ ||- (PiRedTy.dom ΠA)⟨ρ⟩ ≅ domC⟨ρ⟩]< wl' >).
-    { intros. unshelve eapply ihdom.
-      10: now unshelve apply domRedEq'.
-      7: apply domRedEq.
-      6: now unshelve apply domAdC.
-      3: apply domAdB.
-      now apply (PiRedTy.domRed ΠA).
-      assumption.
-    }
-    unshelve econstructor.
-    + exact domC.
-    + exact codC.
-    + exact (max (max domRedBN domRedN') (max domRedCN domRedEqN)).
-    + intros.
-      unshelve eapply (max (max _ _) (max _ _)).
-      1:{ unshelve eapply codRedBN ; try assumption.
-          * eapply AllInLCon_le ; try eassumption.
-            now eapply Nat.max_lub_l ; eapply Nat.max_lub_l.
-          * eapply RedTmConv.
-            now eapply (PiRedTy.domAd ΠAad).
-            3: eassumption.
-            eapply domAdB.
-            eapply domRedEq.
-            eapply AllInLCon_le ; try eassumption.
-            now eapply Nat.max_lub_r ; eapply Nat.max_lub_r. }
-      { unshelve eapply codRedN' ; try assumption.
-        + eapply AllInLCon_le ; try eassumption.
-          now eapply Nat.max_lub_l ; eapply Nat.max_lub_l.
-        + eapply AllInLCon_le ; try eassumption.
-          now eapply Nat.max_lub_r ; eapply Nat.max_lub_l.
-        + eapply RedTmConv.
-          now eapply (PiRedTy.domAd ΠAad).
-          3: eassumption.
-          eapply domAdB.
-          eapply domRedEq.
-          eapply AllInLCon_le ; try eassumption.
-          now eapply Nat.max_lub_r ; eapply Nat.max_lub_r.
-      }
-      { unshelve eapply codRedEqN ; try assumption ;
-          eapply AllInLCon_le ; try eassumption.
-        now eapply Nat.max_lub_r ; eapply Nat.max_lub_r. }
-      { unshelve eapply codRedCN ; try assumption.
-        + eapply AllInLCon_le ; try eassumption.
-          now eapply Nat.max_lub_l ; eapply Nat.max_lub_r.
-        + eapply RedTmConv.
-          now eapply (PiRedTy.domAd ΠAad).
-          3: eassumption.
-          eapply domAdC.
-          eapply domRedAC.
-          * eapply AllInLCon_le ; try eassumption.
-            now eapply Nat.max_lub_l ; eapply Nat.max_lub_l.
-          * eapply AllInLCon_le ; try eassumption.
-            now eapply Nat.max_lub_r ; eapply Nat.max_lub_l.
-          * eapply AllInLCon_le ; try eassumption.
-            now eapply Nat.max_lub_l ; eapply Nat.max_lub_r.
-          * eapply AllInLCon_le ; try eassumption.
-            now eapply Nat.max_lub_r ; eapply Nat.max_lub_r.
-        }
-    + eassumption.
-    + etransitivity; eassumption.
-    + intros ; eapply domRedAC ; eapply AllInLCon_le ; try eassumption.
-      * now eapply Nat.max_lub_l ; eapply Nat.max_lub_l.
-      * now eapply Nat.max_lub_r ; eapply Nat.max_lub_l.
-      * now eapply Nat.max_lub_l ; eapply Nat.max_lub_r.
-      * now eapply Nat.max_lub_r ; eapply Nat.max_lub_r.
-    + intros. unshelve eapply ihcod.
-      10:{ unshelve eapply codRedEq' ; [exact l' | ..] ; try assumption.
-           3-5 : eapply AllInLCon_le ; try eassumption.
-           + eapply AllInLCon_le ; try eassumption.
-             now eapply Nat.max_lub_l ; eapply Nat.max_lub_l.
-           + eapply RedTmConv.
-             4: exact ha.
-             * apply (PiRedTy.domAd ΠAad).
-             * apply domAdB.
-             * apply domRedEq.
-               eapply AllInLCon_le ; try eassumption.
-               now eapply Nat.max_lub_r ; eapply Nat.max_lub_r.
-           + now eapply Nat.max_lub_l ; eapply Nat.max_lub_l.
-           + now eapply Nat.max_lub_r ; eapply Nat.max_lub_l.
-           + now eapply Nat.max_lub_r ; eapply Nat.max_lub_l.
-      }
-      7:{ unshelve eapply codRedEq.
-          * eapply AllInLCon_le ; try eassumption.
-            now eapply Nat.max_lub_r ; eapply Nat.max_lub_r.
-          * eapply AllInLCon_le ; try eassumption.
-            now eapply Nat.max_lub_l; eapply Nat.max_lub_r. }
-      6:{ unshelve apply codAdC. 1: exact l'.
-          assumption.
-(*          now eapply wfLCon_le_trans.*)
-          cbn in Minfl'.
-(*          etransitivity.*)
-          eapply AllInLCon_le ; try eassumption.
-          now eapply Nat.max_lub_l ; eapply Nat.max_lub_r.
-          assumption.
-           { eapply RedTmConv.
-            4: exact ha.
-            + apply (PiRedTy.domAd ΠAad).
-            + apply domAdC.
-            + apply domRedAC.
-              all: eapply AllInLCon_le ; try eassumption.
-            * now eapply Nat.max_lub_l ; eapply Nat.max_lub_l.
-            * now eapply Nat.max_lub_r ; eapply Nat.max_lub_l.
-            * now eapply Nat.max_lub_l ; eapply Nat.max_lub_r.
-            * now eapply Nat.max_lub_r ; eapply Nat.max_lub_r.
-           }
-           assumption.
-           eapply AllInLCon_le ; try eassumption.
-           now eapply Nat.max_lub_r ; eapply Nat.max_lub_r.
-      }
-      3: apply codAdB.
-      now eapply (PiRedTy.codRed ΠA).
-  - destruct RBC; now constructor.
-  - destruct RBC; now constructor.
-  - destruct RBC; now constructor.
-Qed.
+ Proof. now eapply LRTransEq. Qed.
 
-Lemma WtransEq@{i j k l} {wl Γ A B C lA lB lC} 
-  {RA : WLogRel@{i j k l} lA wl Γ A}
-  {RB : WLogRel@{i j k l} lB wl Γ B}
-  {RC : WLogRel@{i j k l} lC wl Γ C}
-  (RAB : W[Γ ||-< lA > A ≅ B | RA]< wl >)
-   (RBC : W[Γ ||-< lB > B ≅ C | RB]< wl >) :
-  W[Γ ||-<lA> A ≅ C | RA]< wl >.
-Proof.
-  destruct RAB as [WNAB WRedEqAB].
-  destruct RBC as [WNBC WRedEqBC].
-  exists (max (max RB.(WN) RC.(WN)) (max WNAB WNBC)).
-  intros.
-  eapply (transEq (B := B)).
-  - unshelve eapply WRedEqAB.
-    eapply AllInLCon_le.
-    eapply Nat.max_lub_l ; now eapply Nat.max_lub_r.
-    eassumption.
-  - unshelve eapply WRedEqBC ; try assumption.
-    + eapply AllInLCon_le.
-      eapply Nat.max_lub_l ; now eapply Nat.max_lub_l.
-      eassumption.
-    + eapply AllInLCon_le.
-      eapply Nat.max_lub_r ; now eapply Nat.max_lub_r.
-      eassumption.
-      Unshelve.
-      * exact lC.
-      * unshelve eapply RC.(WRed) ; try assumption.
-        eapply AllInLCon_le.
-        eapply Nat.max_lub_r ; now eapply Nat.max_lub_l.
-        eassumption.
-Qed.    
 
-  
-
-  
 Lemma transEqTermU@{h i j k} {wl Γ l UU t u v} {h : [Γ ||-U<l> UU]< wl >} :
   [LogRelRec@{i j k} l | Γ ||-U t ≅ u : UU| h]< wl > ->
   [LogRelRec@{i j k} l | Γ ||-U u ≅ v : UU| h]< wl > ->
@@ -207,11 +28,10 @@ Lemma transEqTermU@{h i j k} {wl Γ l UU t u v} {h : [Γ ||-U<l> UU]< wl >} :
 Proof.
   intros [rL ?? redL] [? rR] ; exists rL rR redL; tea.
   + etransitivity; tea.
-    unshelve erewrite (redtmwf_det _ _ _ _ _ _ _ _ _ (URedTm.red redR) (URedTm.red redL0))  ; tea.
+    unshelve erewrite (redtmwf_det _ _ (URedTm.red redR) (URedTm.red redL0))  ; tea.
     all: apply isType_whnf; apply URedTm.type.
   + apply TyEqRecFwd; unshelve eapply transEq@{h i j k}.
-    6,7: now apply (TyEqRecFwd h). 
-    2: apply (RedTyRecFwd h); tea.
+    4,5: now apply (TyEqRecFwd h). 
 Qed.
 
 Lemma transEqTermNeu {wl Γ A t u v} {RA : [Γ ||-ne A]< wl >} :
@@ -221,59 +41,87 @@ Lemma transEqTermNeu {wl Γ A t u v} {RA : [Γ ||-ne A]< wl >} :
 Proof.
   intros [tL] [? tR]; exists tL tR; tea.
   etransitivity; tea.
-  unshelve erewrite (redtmwf_det _ _ _ _ _ _ _ _ _ redR redL0); tea.
-  all: now eapply whnf_whne, tm_ne_whne.
+  unshelve erewrite (redtmwf_det _ _ redR redL0); tea.
+  all: eapply whnf_whne, convneu_whne; first [eassumption|symmetry; eassumption].
 Qed.
 
+
 Lemma transEqTermΠ {wl Γ lA A t u v} {ΠA : [Γ ||-Π<lA> A]< wl >}
-  (ihdom : forall (Δ : context) wl' (ρ : Δ ≤ Γ) (τ : wl' ≤ε wl)
-                  (Ninfl : AllInLCon (PiRedTyPack.domN ΠA) wl')
-                  (h : [ |-[ ta ] Δ]< wl' >) (t u v : term),
-  [PiRedTyPack.domRed ΠA ρ τ Ninfl h | Δ ||- t ≅ u : (PiRedTyPack.dom ΠA)⟨ρ⟩]< wl' > ->
-  [PiRedTyPack.domRed ΠA ρ τ Ninfl h  | Δ ||- u ≅ v : (PiRedTyPack.dom ΠA)⟨ρ⟩]< wl' > ->
-  [PiRedTyPack.domRed ΠA ρ τ Ninfl h  | Δ ||- t ≅ v : (PiRedTyPack.dom ΠA)⟨ρ⟩]< wl' >)
-  (ihcod : forall (Δ : context) wl' (a : term) (ρ : Δ ≤ Γ) (τ : wl' ≤ε wl)
-                  (Ninfl : AllInLCon (PiRedTyPack.domN ΠA) wl')
-                  (h : [ |-[ ta ] Δ]< wl' >)
-                  (ha : [PiRedTyPack.domRed ΠA ρ τ Ninfl h | Δ ||- a : (PiRedTyPack.dom ΠA)⟨ρ⟩]< wl' >)
-                  {wl''} (τ' : wl'' ≤ε wl')
-                  (Minfl : AllInLCon _ wl'')
-                  (t u v : term),
-  [PiRedTyPack.codRed ΠA ρ τ Ninfl h ha τ' Minfl | Δ ||- t ≅ u : (PiRedTyPack.cod ΠA) [a .: ρ >> tRel]]< wl'' > ->
-  [PiRedTyPack.codRed ΠA ρ τ Ninfl h ha τ' Minfl | Δ ||- u ≅ v : (PiRedTyPack.cod ΠA) [a .: ρ >> tRel]]< wl'' > ->
-  [PiRedTyPack.codRed ΠA ρ τ Ninfl h ha τ' Minfl | Δ ||- t ≅ v : (PiRedTyPack.cod ΠA) [a .: ρ >> tRel]]< wl'' >) :
-  [Γ ||-Π t ≅ u : A | PiRedTyPack.toPiRedTy (Γ := Γ) ΠA ]< wl > ->
-  [Γ ||-Π u ≅ v : A | PiRedTyPack.toPiRedTy ΠA ]< wl > ->
-  [Γ ||-Π t ≅ v : A | PiRedTyPack.toPiRedTy ΠA ]< wl >.
+  (ihdom : forall (Δ : context) wl' (ρ : Δ ≤ Γ) (f : wl' ≤ε wl) (h : [ |-[ ta ] Δ]< wl' >) (t u v : term),
+    [PolyRed.shpRed ΠA ρ f h | Δ ||- t ≅ u : _]< wl' > ->
+    [PolyRed.shpRed ΠA ρ f h | Δ ||- u ≅ v : _]< wl' > ->
+    [PolyRed.shpRed ΠA ρ f h | Δ ||- t ≅ v : _]< wl' >)
+  (ihcod : forall (Δ : context) wl' (a : term) (ρ : Δ ≤ Γ) (f : wl' ≤ε wl) (h : [ |-[ ta ] Δ]< wl' >)
+                  (ha : [PolyRed.shpRed ΠA ρ f h | Δ ||- a : _]< wl' >) wl''
+                  (Hover : over_tree wl' wl'' (PolyRed.posTree ΠA ρ f h ha)) (t u v : term),
+    [PolyRed.posRed ΠA ρ f h ha Hover | Δ ||- t ≅ u : _]< wl'' > ->
+    [PolyRed.posRed ΠA ρ f h ha Hover | Δ ||- u ≅ v : _]< wl'' > ->
+    [PolyRed.posRed ΠA ρ f h ha Hover | Δ ||- t ≅ v : _]< wl'' >) :
+  [Γ ||-Π t ≅ u : A | ΠA ]< wl > ->
+  [Γ ||-Π u ≅ v : A | ΠA ]< wl > ->
+  [Γ ||-Π t ≅ v : A | ΠA ]< wl >.
 Proof.
-  intros [tL] [? tR];
-  unshelve epose proof (e := redtmwf_det _ _ _ _ _ _ _ _ _ (PiRedTm.red redR) (PiRedTm.red redL)); tea.
-  1,2: apply isFun_whnf; apply PiRedTm.isfun.
-  unshelve econstructor.
-  - exact tL.
-  - exact tR.
-  - exact (max eqN eqN0).
-  - intros.
-    unshelve refine (max _ _).
-    + unshelve eapply eqappN ; try assumption.
-      eapply AllInLCon_le ; try eassumption.
-      now eapply Nat.max_lub_l.
-    + unshelve eapply eqappN0 ; try assumption.
-      eapply AllInLCon_le ; try eassumption.
-      now eapply Nat.max_lub_r.
-  - etransitivity; tea.
-    now rewrite e.
-  - intros. eapply ihcod.
-    1: eapply eqApp.
-    + eapply AllInLCon_le ; try eassumption.
-      now eapply Nat.max_lub_l.
-    + rewrite e.
-      unshelve eapply eqApp0.
-      * eapply AllInLCon_le ; try eassumption.
-        now eapply Nat.max_lub_r.
-      * eapply AllInLCon_le ; try eassumption.
-        now eapply Nat.max_lub_r.
+  intros [tL] [? tR].
+  assert (forall t (red : [Γ ||-Π t : _ | ΠA]< wl >), whnf (PiRedTm.nf red)).
+  { intros ? [? ? ? ? isfun]; simpl ; destruct isfun; constructor; tea.
+    now eapply convneu_whne. }
+  unshelve epose proof (e := redtmwf_det _ _ (PiRedTm.red redR) (PiRedTm.red redL)); tea.
+  1,2: now eauto.  
+  unshelve eexists ; [exact tL | exact tR | ..].
+  - intros ; do 2 (eapply DTree_fusion).
+    + eapply eqTree ; eauto.
+    + eapply eqTree0 ; eauto.
+    + eapply (PiRedTm.appTree tL) ; eauto.
+    + eapply (PiRedTm.appTree tR) ; eauto.
+  - etransitivity; tea. now rewrite e.
+  - intros ; eapply ihcod.
+    1: eapply eqApp ; cbn in * ; now do 2 (eapply over_tree_fusion_l).
+    rewrite e; apply eqApp0.
+    now eapply over_tree_fusion_r, over_tree_fusion_l.
 Qed.
+
+Lemma transEqTermΣ {wl Γ lA A t u v} {ΣA : [Γ ||-Σ<lA> A]< wl >}
+  (ihdom : forall (Δ : context) wl' (ρ : Δ ≤ Γ) (f : wl' ≤ε wl) (h : [ |-[ ta ] Δ]< wl' >) (t u v : term),
+    [PolyRed.shpRed ΣA ρ f h | Δ ||- t ≅ u : _]< wl' > ->
+    [PolyRed.shpRed ΣA ρ f h | Δ ||- u ≅ v : _]< wl' > ->
+    [PolyRed.shpRed ΣA ρ f h | Δ ||- t ≅ v : _]< wl' >)
+  (ihcod : forall (Δ : context) wl' (a : term) (ρ : Δ ≤ Γ) (f : wl' ≤ε wl) (h : [ |-[ ta ] Δ]< wl' >)
+                  (ha : [PolyRed.shpRed ΣA ρ f h | Δ ||- a : _]< wl' >)  wl'' 
+                  (Hover : over_tree wl' wl'' (PolyRed.posTree ΣA ρ f h ha)) (t u v : term),
+    [PolyRed.posRed ΣA ρ f h ha Hover | Δ ||- t ≅ u : _]< wl'' > ->
+    [PolyRed.posRed ΣA ρ f h ha Hover | Δ ||- u ≅ v : _]< wl'' > ->
+    [PolyRed.posRed ΣA ρ f h ha Hover | Δ ||- t ≅ v : _]< wl'' >) :
+  [Γ ||-Σ t ≅ u : A | ΣA ]< wl > ->
+  [Γ ||-Σ u ≅ v : A | ΣA ]< wl > ->
+  [Γ ||-Σ t ≅ v : A | ΣA ]< wl >.
+Proof.
+  intros [tL ?? eqfst eqtree eqsnd] [? tR ? eqfst' eqtree' eqsnd'].
+  assert (forall t (red : [Γ ||-Σ t : _ | ΣA]< wl >), whnf (SigRedTm.nf red)).
+  { intros ? [? ? ? ? ? ispair]; simpl ; destruct ispair; constructor; tea.
+    now eapply convneu_whne. }
+  unshelve epose proof (e := redtmwf_det _ _ (SigRedTm.red redR) (SigRedTm.red redL)); tea.
+  1,2: now eauto.
+  unshelve eexists ; [exact tL | exact tR |..].
+  - intros ; eapply DTree_fusion ; [eapply DTree_fusion | ].
+    + eapply eqtree ; eauto.
+    + eapply eqtree' ; eauto.
+    + eapply (PolyRed.posTree ΣA ρ f Hd (SigRedTm.fstRed redL ρ f Hd)).
+  - etransitivity; tea. now rewrite e.
+  - intros; eapply ihdom ; [eapply eqfst| rewrite e; eapply eqfst'].
+  - intros; eapply ihcod; [eapply eqsnd|] ; cbn in *.
+    + now do 2 (eapply over_tree_fusion_l).
+    + rewrite e. 
+      eapply LRTmEqRedConv.
+      2: eapply eqsnd'.
+      eapply PolyRed.posExt.
+      1: eapply (SigRedTm.fstRed tL).
+      eapply LRTmEqSym. rewrite <- e.
+      eapply eqfst.
+      now eapply over_tree_fusion_r, over_tree_fusion_l.
+      Unshelve.
+      now eapply over_tree_fusion_r.
+Qed.
+
 
 Lemma transNeNfEq {wl Γ t u v A} :
   [Γ ||-NeNf t ≅ u : A]< wl > ->
@@ -296,7 +144,7 @@ Proof.
   apply NatRedEqInduction.
   - intros * ???? ih ? uv; inversion uv; subst.
     destruct (NatPropEq_whnf prop), (NatPropEq_whnf prop0). 
-    unshelve epose proof (redtmwf_det _ _ u _ _ _ _ _ _ redR redL0); tea; subst.
+    unshelve epose proof (redtmwf_det _ _ redR redL0); tea; subst.
     econstructor; tea.
     1: now etransitivity.
     now eapply ih.
@@ -304,9 +152,9 @@ Proof.
   - intros * ? ih ? uv.
     inversion uv ; subst.
     + econstructor; now eapply ih.
-    + match goal with H : [_ ||-NeNf _ ≅ _ : _ ]< _ > |- _ => destruct H; apply tm_ne_whne in neL; inv_whne end.
+    + match goal with H : [_ ||-NeNf _ ≅ _ : _ ]< wl > |- _ => destruct H; apply convneu_whne in conv; inv_whne end.
   - intros ?? tu ? uv; inversion uv; subst.
-    1,2: destruct tu; apply tm_ne_whne in neR; inv_whne.
+    1,2: destruct tu; symmetry in conv; apply convneu_whne in conv; inv_whne.
     econstructor; now eapply transNeNfEq.
 Qed.
 
@@ -314,6 +162,32 @@ Lemma and_two P Q : Q -> (Q -> P) -> (P × Q).
 Proof.
   firstorder.
 Qed.
+
+Lemma transEqTermEmpty {wl Γ A} (NA : [Γ ||-Empty A]< wl >) :
+  (forall t u, 
+    [Γ ||-Empty t ≅ u : A | NA]< wl > -> forall v,
+    [Γ ||-Empty u ≅ v : A | NA]< wl > ->  
+    [Γ ||-Empty t ≅ v : A | NA]< wl >) ×
+  (forall t u,
+    EmptyPropEq wl Γ t u -> forall v,
+    EmptyPropEq wl Γ u v ->
+    EmptyPropEq wl Γ t v).
+Proof.
+  eapply and_two.
+  - intros ?? tu ? uv; inversion uv; subst.
+    destruct tu.
+    econstructor; now eapply transNeNfEq.
+  - intros HH.
+    intros t u tu v uv. inversion uv; subst.
+    inversion tu; subst.
+    unshelve eapply EmptyPropEq_whnf in prop as HH1. 2: tea. destruct HH1.
+    unshelve eapply EmptyPropEq_whnf in prop0 as HH2. 2: tea. destruct HH2.
+    unshelve epose proof (redtmwf_det _ _ redL redR0); tea; subst.
+    econstructor; tea.
+    1: now etransitivity.
+    eapply HH; eauto.
+Qed.
+
 
 Lemma transEqTermBool {wl Γ A} (NA : [Γ ||-Bool A]< wl >) :
   (forall t u, 
@@ -326,45 +200,48 @@ Lemma transEqTermBool {wl Γ A} (NA : [Γ ||-Bool A]< wl >) :
     BoolPropEq NA t v).
 Proof.
   eapply and_two.
-  - intros ?? tu ? uv ; inversion uv ; subst ; try assumption.
-    destruct tu ; try now econstructor.
-    econstructor.
-    now eapply transNeNfEq.
-  - intros HH t u tu v uv.
-    inversion uv ; subst.
-    inversion tu ; subst.
-    unshelve eapply BoolPropEq_whnf in prop as HH1. destruct HH1.
-    unshelve eapply BoolPropEq_whnf in prop0 as HH2. destruct HH2.
-    unshelve epose proof (redtmwf_det _ _ u _ _ _ _ _ _ redL redR0); tea; subst.
-    econstructor ; tea.
-    now etransitivity.
-    now eapply HH.
-Qed.
-
-Lemma transEqTermEmpty {wl Γ A} (NA : [Γ ||-Empty A]< wl >) :
-  (forall t u, 
-    [Γ ||-Empty t ≅ u : A | NA]< wl > -> forall v,
-    [Γ ||-Empty u ≅ v : A | NA]< wl > ->  
-    [Γ ||-Empty t ≅ v : A | NA]< wl >) ×
-  (forall t u,
-    EmptyPropEq (l := wl) Γ t u -> forall v,
-    EmptyPropEq (l := wl) Γ u v ->
-    EmptyPropEq (l := wl) Γ t v).
-Proof.
-  eapply and_two.
-  - intros ?? tu ? uv; inversion uv; subst.
-    destruct tu.
-    econstructor; now eapply transNeNfEq.
+  - intros * ih ? uv; inversion uv; inversion ih ; subst.
+    all: auto ; try now econstructor.
+    econstructor ; now eapply transNeNfEq.
   - intros HH.
     intros t u tu v uv. inversion uv; subst.
     inversion tu; subst.
-    unshelve eapply EmptyPropEq_whnf in prop as HH1. 2: tea. destruct HH1.
-    unshelve eapply EmptyPropEq_whnf in prop0 as HH2. 2: tea. destruct HH2.
-    unshelve epose proof (redtmwf_det _ _ u _ _ _ _ _ _ redL redR0); tea; subst.
+    unshelve eapply BoolPropEq_whnf in prop as HH1. destruct HH1.
+    unshelve eapply BoolPropEq_whnf in prop0 as HH2. destruct HH2.
+    unshelve epose proof (redtmwf_det _ _ redL redR0); tea; subst.
     econstructor; tea.
     1: now etransitivity.
     eapply HH; eauto.
 Qed.
+
+
+Lemma transIdPropEq {wl Γ l A} (IA : [Γ ||-Id<l> A]< wl >) t u v :
+  IdPropEq IA t u -> IdPropEq IA u v -> IdPropEq IA t v.
+Proof.
+  intros [] h; inversion h; subst.
+  - now econstructor.
+  - match goal with H : [_ ||-NeNf _ ≅ _ : _ ]< wl > |- _ => destruct H; apply convneu_whne in conv; inv_whne end.
+  - match goal with H : [_ ||-NeNf _ ≅ _ : _ ]< wl > |- _ => destruct H; symmetry in conv; apply convneu_whne in conv; inv_whne end.
+  - econstructor; now eapply transNeNfEq.
+Qed.
+
+Lemma IdPropEq_whnf {wl Γ l A} (IA : [Γ ||-Id<l> A]< wl >) t u : IdPropEq IA t u -> whnf t × whnf u.
+Proof.
+  intros []; split; constructor; destruct r; eapply convneu_whne; tea; now symmetry.
+Qed.
+
+Lemma transTmEqId {wl Γ l A} (IA : [Γ ||-Id<l> A]< wl >) t u v :
+  [Γ ||-Id<l> t ≅ u : _ | IA]< wl > -> [Γ ||-Id<l> u ≅ v : _| IA]< wl > -> [Γ ||-Id<l> t ≅ v : _| IA]< wl >.
+Proof.
+  intros [??? red ? prop] [?? red' ?? prop'].
+  pose proof prop as [_ wh]%IdPropEq_whnf.
+  pose proof prop' as [wh' _]%IdPropEq_whnf.
+  pose proof (redtmwf_det wh wh' red red'); subst.
+  unshelve econstructor; cycle 2; tea.
+  1: now etransitivity.
+  now eapply transIdPropEq.
+Qed.
+
 
 Lemma transEqTerm@{h i j k l} {wl Γ lA A t u v} 
   {RA : [LogRel@{i j k l} lA | Γ ||- A]< wl >} :
@@ -372,13 +249,25 @@ Lemma transEqTerm@{h i j k l} {wl Γ lA A t u v}
   [Γ ||-<lA> u ≅ v : A | RA]< wl > ->
   [Γ ||-<lA> t ≅ v : A | RA]< wl >.
 Proof. 
-  revert t u v; pattern lA, wl, Γ, A, RA; apply LR_rect_TyUr; clear lA wl Γ A RA; intros l Γ.
+  revert t u v; pattern lA, wl, Γ, A, RA; apply LR_rect_TyUr; clear lA wl Γ A RA; intros l wl Γ.
   - intros *; apply transEqTermU@{h i j k}.
   - intros *; apply transEqTermNeu.
   - intros * ?????. apply transEqTermΠ; tea.
-  - intros ?? NA ** ; now eapply (fst (transEqTermNat NA)).
-  - intros ?? NA **; now eapply (fst (transEqTermBool NA)).
-  - intros ?? NA **; now eapply (fst (transEqTermEmpty NA)).
+  - intros ? NA **; now eapply (fst (transEqTermNat NA)).
+  - intros ? NA **; now eapply (fst (transEqTermBool NA)).
+  - intros ? NA **; now eapply (fst (transEqTermEmpty NA)).
+  - intros * ?????; apply transEqTermΣ; tea.
+  - intros; now eapply transTmEqId.
+Qed.
+
+
+#[global]
+Instance perLRTmEq@{i j k l} {wl Γ l A} (RA : [LogRel@{i j k l} l | Γ ||- A]< wl >):
+  Coq.Classes.CRelationClasses.PER (fun t u => [RA | _ ||- t ≅ u : _]< wl >).
+Proof.
+  econstructor.
+  - intros ???; now eapply LRTmEqSym.
+  - intros ???; now eapply transEqTerm.
 Qed.
 
 Lemma LREqTermSymConv {wl Γ t u G G' l RG RG'} :
@@ -404,3 +293,5 @@ Proof.
 Qed.  
 
 End Transitivity.
+
+

@@ -55,8 +55,8 @@ Record equivPolyRed@{i j k l i' j' k' l' v}
     eqvPos : forall {Δ wl' a} (ρ : Δ ≤ Γ) (f : wl' ≤ε wl) (wfΔ : [  |- Δ]< wl' >)
           (ha : [PolyRed.shpRed PA ρ f wfΔ| Δ ||- a : _]< wl' >)
           (ha' : [PolyRed.shpRed PA' ρ f wfΔ | Δ ||- a : _]< wl' >),
-    forall {wl''} (Ho : over_tree wl' wl'' (PolyRed.posRedTree PA ρ f wfΔ ha))
-           (Ho' : over_tree wl' wl'' (PolyRed.posRedTree PA' ρ f wfΔ ha'))
+    forall {wl''} (Ho : over_tree wl' wl'' (PolyRed.posTree PA ρ f wfΔ ha))
+           (Ho' : over_tree wl' wl'' (PolyRed.posTree PA' ρ f wfΔ ha'))
            (Ho'' : over_tree wl' wl'' (eqvTree ρ f wfΔ ha ha')),
           equivLRPack@{k k' v} 
             (PolyRed.posRed PA ρ f wfΔ ha Ho)
@@ -107,9 +107,9 @@ Proof.
   - intros.
     unshelve eapply (DTree_fusion _ _).
     + eapply DTree_fusion.
-      * eapply (PolyRed.posRedTree ΠA) ; now eapply eqv.(eqvShp).
+      * eapply (PolyRed.posTree ΠA) ; now eapply eqv.(eqvShp).
       * eapply eqv.(eqvTree) ; eauto. now eapply eqv.(eqvShp).
-    + eapply posRedTree ; now eapply eqv.(eqvShp).
+    + eapply posTree ; now eapply eqv.(eqvShp).
   - intros; now apply eqv.(eqvShp).
   - intros; cbn in *.
     unshelve eapply eqv.(eqvPos).
@@ -126,12 +126,22 @@ Proof.
   intros []; cbn in *; unshelve econstructor; tea.
   - intros ; eapply DTree_fusion.
     + eapply DTree_fusion.
-      * eapply (PolyRed.posRedTree ΠA) ; now eapply eqv.(eqvShp).
+      * eapply (PolyRed.posTree ΠA) ; now eapply eqv.(eqvShp).
       * eapply eqv.(eqvTree) ; eauto. now eapply eqv.(eqvShp).
     + eapply appTree ; now eapply eqv.(eqvShp).
   - now eapply redtmwf_conv.
   - eapply (convtm_conv refl).
     now apply eqPi.
+  - destruct isfun as [A'' t' eqdom eqapp| ] ; cbn in *.
+    + econstructor.
+      * intros ; now eapply eqv.(eqvShp).
+      * intros; unshelve eapply eqv.(eqvPos); [| | | eauto ] ; cbn in *.
+        -- now apply eqv.(eqvShp).
+        -- do 2 (eapply over_tree_fusion_l) ; eassumption.
+        -- eapply over_tree_fusion_r, over_tree_fusion_l ; eassumption.
+        -- eapply eqapp.
+           eapply over_tree_fusion_r ; eassumption.
+    + constructor; now eapply convneu_conv.
   - intros; unshelve eapply eqv.(eqvPos).
     now apply eqv.(eqvShp).
     3: eapply app.
@@ -151,7 +161,7 @@ Proof.
   1,2: now eapply ΠIrrelevanceTm.
   - intros ; eapply DTree_fusion.
     + eapply DTree_fusion.
-      * eapply (PolyRed.posRedTree ΠA) ; now eapply eqv.(eqvShp).
+      * eapply (PolyRed.posTree ΠA) ; now eapply eqv.(eqvShp).
       * eapply eqv.(eqvTree) ; eauto ; now eapply eqv.(eqvShp).
     + eapply eqTree ; now eapply eqv.(eqvShp).
   - now eapply convtm_conv.
@@ -206,9 +216,9 @@ Proof.
   - cbn; etransitivity; [|tea]; now symmetry.
   - intros ; eapply DTree_fusion.
     + eapply DTree_fusion.
-      * eapply (PolyRed.posRedTree ΣA) ; now apply eqv.(eqvShp).
+      * eapply (PolyRed.posTree ΣA) ; now apply eqv.(eqvShp).
       * eapply eqv.(eqvTree) ; eauto ; now eapply eqv.(eqvShp).
-    + eapply posRedTree ; now apply eqv.(eqvShp).
+    + eapply posTree ; now apply eqv.(eqvShp).
   - intros; now apply eqv.(eqvShp).
   - intros; cbn; unshelve eapply eqv.(eqvPos).
     3: eauto.
@@ -222,11 +232,39 @@ Qed.
 Lemma ΣIrrelevanceTm t : [Γ ||-<lA> t : A | RA]< wl > -> [Γ ||-<lA'> t : A' | RA']< wl >.
 Proof.
   intros []; cbn in *; unshelve econstructor.
-  3: intros ; eapply DTree_fusion ; [ eapply DTree_fusion ; [unshelve eapply (PolyRed.posRedTree ΣA) | eapply eqv.(eqvTree) ; eauto] | unshelve eapply sndTree ].
+  3: intros ; eapply DTree_fusion ; [ eapply DTree_fusion ; [unshelve eapply (PolyRed.posTree ΣA) | eapply eqv.(eqvTree) ; eauto] | unshelve eapply sndTree ].
+  Unshelve.
   all: try eapply fstRed ; tea ; try now apply eqv.(eqvShp).
   - intros; unshelve eapply eqv.(eqvShp); now auto.
   - now eapply redtmwf_conv.
   - now eapply convtm_conv.
+  - destruct ispair as [A₀ B₀ a b|n Hn] ; cbn in *.
+    + unshelve econstructor.
+      2,4: intros; now unshelve eapply eqv.(eqvShp).
+      all: cbn in *.
+      * intros ; eapply DTree_fusion ; [eapply DTree_fusion | ].
+        -- eapply (PolyRed.posTree ΣA ρ f Hd).
+           now eapply eqv.(eqvShp).
+        -- eapply eqv.(eqvTree) ; [ | eauto].
+           now eapply eqv.(eqvShp).
+        -- eapply codTree.
+           now eapply eqv.(eqvShp).
+      * intros ; eapply DTree_fusion ; [eapply DTree_fusion | ].
+        -- eapply (PolyRed.posTree ΣA).
+           eapply rfst.
+        -- eapply eqv.(eqvTree) ; [ now eapply rfst | ].
+           now eapply eqv.(eqvShp), rfst.
+        -- now eapply rsndTree ; eauto.
+      * intros ; unshelve eapply eqv.(eqvPos) ; [ now eapply eqv.(eqvShp) | | | eapply rcod].
+          all: cbn in *.
+        -- do 2 (eapply over_tree_fusion_l) ; exact Ho'.
+        -- eapply over_tree_fusion_r, over_tree_fusion_l ; exact Ho'.
+        -- eapply over_tree_fusion_r ; exact Ho'.
+      * intros ; unshelve eapply eqv.(eqvPos) ; [ | | | eapply rsnd ] ; cbn in *.
+        -- do 2 (eapply over_tree_fusion_l) ; exact Ho'.
+        -- eapply over_tree_fusion_r, over_tree_fusion_l ; exact Ho'.
+        -- eapply over_tree_fusion_r ; exact Ho'.
+    + constructor; now eapply convneu_conv.
   - cbn in *.
     intros ; unshelve eapply eqv.(eqvPos) ; eauto.
     3: eapply sndRed.
@@ -240,7 +278,7 @@ Proof.
   intros [] ; cbn in *; unshelve econstructor.
   1,2: now eapply ΣIrrelevanceTm.
   - intros ; eapply DTree_fusion ;
-      [ eapply DTree_fusion ; [unshelve eapply (PolyRed.posRedTree ΣA) | eapply eqv.(eqvTree) ; eauto]
+      [ eapply DTree_fusion ; [unshelve eapply (PolyRed.posTree ΣA) | eapply eqv.(eqvTree) ; eauto]
       | unshelve eapply eqTree ].
     6,7: now eapply (SigRedTm.fstRed redL).
     all: eauto ; unshelve eapply eqv.(eqvShp) ; try eapply (SigRedTm.fstRed redL).
@@ -683,7 +721,7 @@ Proof.
                   (LRAd.adequate (IHshp Δ _ ρ f tΔ))
                   (reflLRTyEq shpRed)) as [_ irrTmRed _].
       now eapply (snd (irrTmRed a)).
-    * eapply (PA.(PolyRed.posRedTree)).
+    * eapply (PA.(PolyRed.posTree)).
       pose (shpRed := PA.(PolyRed.shpRed) ρ f tΔ).
       destruct (LRIrrelevantPreds IH _ _ _ _
                   (LRAd.adequate shpRed)
@@ -727,7 +765,7 @@ Proof.
     eapply LRPi'; unshelve econstructor.
     3,4,5: tea.
     unshelve eapply LRIrrelevantCumPolyRed; tea.
-    + intros * ha ; now eapply (PolyRed.posRedTree polyRed ρ f h ha).
+    + intros * ha ; now eapply (PolyRed.posTree polyRed ρ f h ha).
     + intros; now eapply IHdom.
     + intros; now eapply IHcod.
   - intros; now eapply LRNat_.
@@ -737,7 +775,7 @@ Proof.
     eapply LRSig'; unshelve econstructor.
     3,4,5: tea.
     unshelve eapply LRIrrelevantCumPolyRed; tea.
-    + intros * ha ; now eapply (PolyRed.posRedTree polyRed ρ f h ha).
+    + intros * ha ; now eapply (PolyRed.posTree polyRed ρ f h ha).
     + intros; now eapply IHdom.
     + intros; now eapply IHcod.
   - intros [] IHPar IHKripke IH. 
@@ -994,10 +1032,10 @@ Corollary PolyRedEqSym {wl Γ l l' shp shp' pos pos'}
 Proof.
   intros []; unshelve econstructor.
   - intros; eapply DTree_fusion.
-    + eapply (PolyRedPack.posRedTree PA) ; eauto.
+    + eapply (PolyRedPack.posTree PA) ; eauto.
       eapply LRTmRedConv; tea.
       now eapply LRTyEqSym.
-    + eapply posRedTree.
+    + eapply posTree.
       eapply LRTmRedConv; tea.
       now eapply LRTyEqSym.
   - intros ; eapply LRTyEqSym; eauto.
@@ -1083,7 +1121,7 @@ Proof.
     2: now symmetry.
     + intros ; eapply DTree_fusion.
       * now eapply eqTree.
-      * exact (PolyRed.posRedTree ΠA _ _ _ (SigRedTm.fstRed redL ρ f Hd)).
+      * exact (PolyRed.posTree ΠA _ _ _ (SigRedTm.fstRed redL ρ f Hd)).
     + intros; now eapply ihshp.
     + intros; unshelve eapply ihpos.
       eapply LRTmEqRedConv.
