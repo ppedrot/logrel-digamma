@@ -1,6 +1,6 @@
 Require Import PeanoNat.
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
-From LogRel Require Import Utils BasicAst Notations LContexts Context NormalForms UntypedReduction Weakening GenericTyping LogicalRelation DeclarativeInstance.
+From LogRel Require Import Utils BasicAst Notations LContexts Context NormalForms UntypedReduction Weakening GenericTyping Monad LogicalRelation DeclarativeInstance.
 From LogRel.LogicalRelation Require Import Induction Reflexivity Irrelevance Escape.
 
 Set Universe Polymorphism.
@@ -9,17 +9,15 @@ Section Neutral.
 Context `{GenericTypingProperties}.
 
 Definition neu {l wl Γ A} :
-  Ne[Γ |- A]< wl > ->
   [Γ |- A]< wl > ->
   [ Γ |- A ~ A : U]< wl > ->
   [Γ ||-<l> A]< wl >.
 Proof.
-  intros neA wtyA reflA. apply LRne_.
+  intros wtyA reflA. apply LRne_.
   exists A; [gen_typing|..]; assumption.
 Defined.
 
 Lemma neU {l wl Γ A n} (h : [Γ ||-U<l> A]< wl >) :
-  Ne[Γ |- n : A]< wl > ->
   [Γ |- n : A]< wl > ->
   [Γ |- n ~ n : A]< wl > ->
   [LogRelRec l | Γ ||-U n : A | h]< wl >.
@@ -27,52 +25,28 @@ Proof.
   assert [Γ |- A ≅ U]< wl > by (destruct h; gen_typing).
   intros; exists n.
   * eapply redtmwf_conv; tea; now eapply redtmwf_refl.
-  * now eapply NeType, tm_ne_whne.
-  * eapply tm_nf_conv.
-    -- now eapply tm_ne_nf.
-    -- assumption.
-  * eapply convtm_conv; tea; gen_typing.
-  * eapply RedTyRecBwd, neu. 2,3: gen_typing.
-    eapply ty_ne_term, tm_ne_conv; now gen_typing.
+  * now eapply NeType, convneu_whne.
+  * apply convtm_convneu ; tea.
+    1: now constructor.
+    now eapply convneu_conv.
+  * eapply RedTyRecBwd, neu. 1,2: gen_typing.
 Defined.
-
-
-Lemma neElim {wl Γ l K} : [Γ ||-<l> K]< wl > -> whne K -> [Γ ||-ne K]< wl >.
-Proof.
-  intros h; pattern l,wl,Γ,K,h; eapply LR_rect_TyUr;
-  clear l wl Γ K h.
-  - intros ???? [??? r] ne; pose proof (redtywf_whne r  ne); subst; inversion ne.
-  - intros; assumption.
-  - intros ???? [?? red] ?? ne ; cbn in *.
-    rewrite (redtywf_whne red ne) in ne.
-    inversion ne.
-  - intros ???? [red] ne.
-    rewrite (redtywf_whne red ne) in ne.
-    inversion ne.
-  - intros ???? [red] ne.
-    rewrite (redtywf_whne red ne) in ne.
-    inversion ne.
-  - intros ???? [red] ne.
-    rewrite (redtywf_whne red ne) in ne.
-    inversion ne.
-Qed.
 
 Set Printing Primitive Projection Parameters.
 
-
 Lemma neuEq {l wl Γ A B} (RA : [Γ ||-<l> A]< wl >) :
-  Ne[Γ |- A]< wl > -> Ne[Γ |- B]< wl > ->
   [Γ |- A]< wl > -> [Γ |- B]< wl > ->
   [Γ |- A ~ B : U]< wl > ->
   [Γ ||-<l> A ≅ B | RA]< wl >.
 Proof.
-  intros neA neB wtyA wtyB eqAB.
+  intros wtyA wtyB eqAB.
   unshelve irrelevance0. 1: assumption. 3: reflexivity.
   1: apply neu; try assumption; now eapply lrefl.
   econstructor.
   1: now apply redtywf_refl.
   all: cbn; assumption.
 Qed.
+
 
 Lemma ty_app_ren {wl Γ Δ A f a dom cod} (ρ : Δ ≤ Γ) :
   [Γ |- f : A]< wl > -> [Γ |- A ≅ tProd dom cod]< wl > -> [Δ |- a : dom⟨ρ⟩]< wl > -> [Δ |- tApp f⟨ρ⟩ a : cod[a .: ρ >> tRel]]< wl >.
@@ -97,19 +71,222 @@ Proof.
   gen_typing.
 Qed.
 
-Lemma neu_app_ren {wl Γ Δ A n a dom cod} (ρ : Δ ≤ Γ) :
-  [|- Δ]< wl > ->
-  [Γ |- tProd dom cod]< wl > ->
-  Ne[Γ |- n : A]< wl > -> [Γ |- A ≅ tProd dom cod]< wl > -> Nf[Δ |- a : dom⟨ρ⟩]< wl > -> Ne[Δ |- tApp n⟨ρ⟩ a : cod[a .: ρ >> tRel]]< wl >.
+
+Record complete {l wl Γ A} (RA : [Γ ||-<l> A]< wl >) := {
+  reflect : forall n n',
+    [Γ |- n : A]< wl > ->
+    [Γ |- n' : A]< wl > ->
+    [Γ |- n ~ n' : A]< wl > ->
+    [Γ ||-<l> n : A | RA]< wl > × [Γ ||-<l> n ≅ n' : A| RA]< wl >;
+}.
+
+Lemma complete_reflect_simpl {l wl Γ A} (RA : [Γ ||-<l> A]< wl >) (c : complete RA) :
+  forall n, [Γ |- n : A]< wl > -> [Γ |- n ~ n : A]< wl > -> [Γ ||-<l> n : A | RA]< wl >.
 Proof.
-  intros.
-  replace (cod[a .: ρ >> tRel]) with (cod⟨wk_up dom ρ⟩[a..]) by (now bsimpl).
-  eapply tm_ne_app; [|eassumption].
-  change (Ne[Δ |- n⟨ρ⟩ : (tProd dom cod)⟨ρ⟩]< wl >).
-  eapply tm_ne_conv.
-  + now eapply tm_ne_wk.
-  + now eapply convty_wk.
+intros; eapply c.
+all: eassumption.
 Qed.
+
+Lemma complete_var0 {l wl Γ A A'} (RA : [Γ ,, A ||-<l> A']< wl >) :
+  complete RA ->
+  [Γ ,, A |- A⟨↑⟩ ≅ A']< wl > ->
+  [Γ |- A]< wl > ->
+  [Γ ,, A ||-<l> tRel 0 : A' | RA]< wl >.
+Proof.
+  intros cRA conv HA.
+  assert [Γ ,, A |- tRel 0 : A']< wl >
+  by (eapply ty_conv; tea; escape; eapply (ty_var (wfc_wft EscRA) (in_here _ _))).
+  eapply complete_reflect_simpl; tea.
+  - eapply convneu_var; tea.
+Qed.
+
+
+
+Lemma complete_U : forall l wl Γ A (RA : [Γ ||-U< l > A]< wl >), complete (LRU_ RA).
+Proof.
+intros l wl Γ A h0; split.
+- intros ???? h; pose proof (lrefl h); pose proof (urefl h).
+  assert [Γ |- A ≅ U]< wl > by (destruct h0; gen_typing); split.
+  2: unshelve econstructor.
+  1-3: now apply neU.
+  + eapply RedTyRecBwd, neu. 1,2: try gen_typing.
+  + cbn. gen_typing.
+  + eapply RedTyRecBwd; apply neu. 1,2: gen_typing.
+  + eapply TyEqRecBwd. eapply neuEq. all: try gen_typing.
+    all: eapply ty_ne_term, tm_ne_conv; tea; gen_typing.
+Qed.
+
+Lemma complete_ne : forall l wl Γ A (RA : [Γ ||-ne A]< wl >), complete (LRne_ l RA).
+Proof.
+intros l wl Γ A h0; split.
+- destruct h0 as [B []]; intros ** ; assert ([Γ |- A ≅ B]< wl >) by gen_typing ; split.
+  + exists n; cbn.
+    * eapply redtmwf_refl ; gen_typing.
+    * eapply lrefl; eapply convneu_conv; eassumption.
+  + exists n n'; cbn.
+    1,2: eapply redtmwf_refl ; eapply ty_conv; gen_typing.
+    gen_typing.
+Qed.
+
+Lemma complete_Pi : forall l wl Γ A (RA : [Γ ||-Π< l > A]< wl >),
+  (forall (Δ : context) (wl' : wfLCon) (ρ : Δ ≤ Γ) (f : wl' ≤ε wl) (h : [ |-[ ta ] Δ]< wl' >),
+        complete (PolyRed.shpRed RA ρ f h)) ->
+  (forall (Δ : context) (wl' : wfLCon) (a : term) (ρ : Δ ≤ Γ) (f : wl' ≤ε wl) (h : [ |-[ ta ] Δ]< wl' >)
+          (ha : [PolyRed.shpRed RA ρ f h | Δ ||- a : _]< wl' >)
+          (wl'' : wfLCon) (Ho : over_tree wl' wl'' (PolyRed.posTree RA ρ f h ha)),
+        complete (PolyRed.posRed RA ρ f h ha Ho)) ->
+  complete (LRPi' RA).
+Proof.
+intros l wl Γ A ΠA0 ihdom ihcod; split.
+- set (ΠA := ΠA0); destruct ΠA0 as [dom cod].
+  simpl in ihdom, ihcod.
+  assert [Γ |- A ≅ tProd dom cod]< wl > by gen_typing.
+  assert [Γ |- dom]< wl >.
+  {
+    erewrite <- wk_id_ren_on.
+    eapply escape, polyRed ; [now eapply wfLCon_le_id | ].
+    gen_typing.
+  }
+  assert [|- Γ ,, dom]< wl > as Hext by gen_typing.
+  assert [Γ,, dom |-[ ta ] tRel 0 : dom⟨@wk1 Γ dom⟩]< wl >.
+  {
+    eapply ty_var ; tea.
+    rewrite wk1_ren_on.
+    econstructor.
+  }
+  assert [Γ,, dom |-[ ta ] tRel 0 ~ tRel 0 : dom⟨@wk1 Γ dom⟩]< wl >
+    by now apply convneu_var.
+  assert [PolyRed.shpRed polyRed (wk1 dom) (wfLCon_le_id _) Hext | Γ,, dom ||- tRel 0 : dom⟨wk1 dom⟩]< wl >
+    by now eapply ihdom.
+  assert [Γ ,, dom |- cod]< wl >.
+  {
+    replace cod with cod[tRel 0 .: @wk1 Γ dom >> tRel].
+    2: bsimpl; rewrite scons_eta'; now asimpl.
+    unshelve eapply (wft_over_tree).
+    + exact (PolyRed.posTree polyRed _ _ _ X).
+    + intros wl' Hover.
+      unshelve eapply escape, polyRed.
+      5: eassumption.
+  }
+  assert (forall n Δ wl' a (ρ : Δ ≤ Γ) (f : wl' ≤ε wl),
+             [|- Δ]< wl' > -> [Γ |- n : A]< wl' > ->
+             [Δ |- a : dom⟨ρ⟩]< wl' > ->
+             [Δ |-[ ta ] tApp n⟨ρ⟩ a : cod[a .: ρ >> tRel]]< wl' >)
+    as Happ.
+    {
+      intros.
+      eapply typing_meta_conv.
+      1: eapply ty_app ; tea.
+      1: eapply typing_meta_conv.
+      1: eapply ty_wk.
+      - eassumption.
+      - eapply ty_conv ; tea.
+        eapply convty_Ltrans ; [eassumption | ].
+        eassumption.
+      - cbn ; reflexivity.
+      - now bsimpl. 
+    }
+    assert (forall n, [Γ |- n : A]< wl > ->
+                      [Γ,, dom |-[ ta ] tApp n⟨@wk1 Γ dom⟩ (tRel 0) : cod]< wl >).
+    {
+      intros.
+      eapply typing_meta_conv.
+      1: apply Happ ; tea.
+      2: bsimpl. now eapply wfLCon_le_id. rewrite scons_eta' ; now bsimpl.
+    }
+  assert (forall n n',
+    [Γ |- n : A]< wl > -> [Γ |- n' : A]< wl > ->
+    [Γ |- n ~ n : A]< wl > -> [Γ |- n' ~ n' : A]< wl > -> 
+    [Γ |- n ~ n' : A]< wl > ->
+    [Γ |-[ ta ] n ≅ n' : tProd dom cod]< wl >).
+  {
+    intros.
+    eapply convtm_eta ; tea.
+    - now eapply ty_conv.
+    - constructor.
+      now eapply convneu_conv.
+    - now eapply ty_conv.
+    - econstructor.
+      now eapply convneu_conv.
+    - eapply convneu_app_ren in H20 ; tea ; cycle -1.
+      2: eapply ihcod in H20 as [_ hred].
+      + now eapply escapeEqTerm, reflLRTmEq.
+      + erewrite <- wk1_ren_on.
+        eapply convtm_meta_conv.
+        1: now escape.
+        1: bsimpl; rewrite scons_eta' ; now bsimpl.
+        now bsimpl.
+      + eapply typing_meta_conv ; eauto.
+        bsimpl. rewrite scons_eta'. now bsimpl.
+      + eapply typing_meta_conv ; eauto.
+        bsimpl. rewrite scons_eta'. now bsimpl.
+  }
+
+  unshelve refine (let funred : forall n,
+                       [Γ |- n : A]< wl > ->
+                       [Γ |- n ~ n : A]< wl > ->
+                       [Γ ||-Π n : A | ΠA]< wl > := _ in _).
+  {
+    intros. exists n (fun _ _ _ _ _ _ _ => leaf _) ; cbn.
+    - eapply redtmwf_refl.
+      gen_typing.
+    - eauto.
+    - constructor; now eapply convneu_conv.
+    - intros.
+      eapply ihcod ; last first.
+      + eapply convne_meta_conv.
+        1: eapply convneu_app.
+        * eapply convne_meta_conv.
+          1: eapply convneu_wk ; [eapply wfc_Ltrans ; eassumption | ].
+          1: eapply convneu_conv ; tea.
+          1: eapply convneu_Ltrans ; [ | eassumption].
+          2: eapply convty_Ltrans ; [ | eauto].
+          1,2: eapply wfLCon_le_trans ; eassumption.
+          all: cbn ; easy.
+        * eapply escapeEqTerm, reflLRTmEq.
+        * now bsimpl.
+        * reflexivity. 
+      + eapply Happ ; tea.
+        now escape.
+      + eapply Happ ; tea.
+        now escape.
+    - intros.
+      eapply ihcod ; last first.
+      + eapply convne_meta_conv.
+        1: eapply convneu_app.
+        * eapply convne_meta_conv.
+          1: eapply convneu_wk.
+          2: eapply convneu_conv ; tea.
+          all: cbn ; easy.
+        * now escape.
+        * now bsimpl.
+        * reflexivity. 
+      + eapply ty_conv.
+        1: eapply Happ ; tea ; now escape.
+        symmetry.
+        eapply escapeEq, PolyRed.posExt ; tea.
+      + eapply Happ ; tea.
+        now escape.
+  }
+
+  intros ???? h.
+  pose proof (lrefl h); pose proof (urefl h).
+  split. 1: now apply funred.
+  unshelve econstructor.
+  1,2: now apply funred.
+  all: cbn; clear funred.
+  * eauto.
+  * intros. apply ihcod; cbn.
+    + apply escapeTerm in ha; now eapply ty_app_ren.
+    + apply escapeTerm in ha; now eapply ty_app_ren.
+    + eapply convneu_app_ren. 1,2: eassumption.
+    eapply escapeEqTerm; eapply reflLRTmEq; eassumption.
+
+  Unshelve.
+  all: eauto.
+Qed.
+
+Arguments ParamRedTy.outTy /.
 
 Record complete {l wl Γ A} (RA : [Γ ||-<l> A]< wl >) := {
   reifyTyConvN :

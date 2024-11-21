@@ -254,3 +254,81 @@ Qed.
 
 Arguments over_tree_fusion_l [_ _ _ _] _.
 Arguments over_tree_fusion_r [_ _ _ _] _.
+
+Lemma split_to_over_tree (wl : wfLCon)
+  (P : wfLCon -> Type)
+  (Pe : forall wl n (ne : not_in_LCon (pi1 wl) n), P (wl ,,l (ne, true)) -> P (wl ,,l (ne, false)) -> P wl)
+  (d : DTree wl)
+  (H : forall wl', over_tree wl wl' d -> P wl') : P wl. 
+Proof.
+  induction d.
+  - apply H.
+    now intros n b Hin.
+  - apply (Pe _ n ne).
+    + apply IHd1.
+      intros wl' Hover ; cbn in *.
+      apply H.
+      unshelve erewrite (decidInLCon_true _) ; [ | assumption].
+      apply (over_tree_le Hover) ; now constructor.
+    + apply IHd2.
+      intros wl' Hover ; cbn in *.
+      apply H.
+      unshelve erewrite (decidInLCon_false _) ; [ | assumption].
+      apply (over_tree_le Hover) ; now constructor.
+Qed.
+
+Section Typing.
+
+  Context `{GenericTypingProperties}.
+  
+  Lemma wfc_over_tree {wl Γ} (d : DTree wl) :
+    (forall wl', over_tree wl wl' d -> [ |- Γ ]< wl' >) ->
+    [ |- Γ ]< wl >.
+  Proof.
+    apply split_to_over_tree.
+    intros * Ht Hf ; now eapply (wfc_ϝ Ht Hf).
+  Qed.
+
+  Lemma wft_over_tree {wl Γ A} (d : DTree wl) :
+    (forall wl', over_tree wl wl' d -> [ Γ |- A ]< wl' >) ->
+    [ Γ |- A ]< wl >.
+  Proof.
+    apply split_to_over_tree.
+    intros * Ht Hf ; now eapply (wft_ϝ Ht Hf).
+  Qed.
+  
+  Lemma ty_over_tree {wl Γ t A} (d : DTree wl) :
+    (forall wl', over_tree wl wl' d -> [Γ |- t : A]< wl' >) ->
+    [Γ |- t : A]< wl >.
+  Proof.
+    apply split_to_over_tree.
+    intros * Ht Hf ; now eapply (ty_ϝ Ht Hf).
+  Qed.
+
+  Lemma convty_over_tree {wl Γ A B} (d : DTree wl) :
+    (forall wl', over_tree wl wl' d -> [Γ |- A ≅ B]< wl' >) ->
+    [Γ |- A ≅ B]< wl >.
+  Proof.
+    apply split_to_over_tree.
+    intros * Ht Hf ; now eapply (convty_ϝ Ht Hf).
+  Qed.
+
+  Lemma convtm_over_tree {wl Γ t u A} (d : DTree wl) :
+    (forall wl', over_tree wl wl' d -> [Γ |- t ≅ u : A]< wl' >) ->
+    [Γ |- t ≅ u : A]< wl >.
+  Proof.
+    apply split_to_over_tree.
+    intros * Ht Hf ; now eapply (convtm_ϝ Ht Hf).
+  Qed.
+
+  Lemma convneu_over_tree {wl Γ t u A} (d : DTree wl) :
+    (forall wl', over_tree wl wl' d -> [Γ |- t ~ u : A]< wl' >) ->
+    [Γ |-  t ~ u : A]< wl >.
+  Proof.
+    apply split_to_over_tree.
+    intros * Ht Hf ; now eapply (convneu_ϝ Ht Hf).
+  Qed.
+
+End Typing.
+
+

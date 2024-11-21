@@ -886,6 +886,14 @@ Section GenericConsequences.
     intros ??? [] []; unshelve econstructor; try etransitivity; tea.
   Qed.
 
+  Lemma redtywf_Ltrans {wl wl' Γ A B} :
+    wl' ≤ε wl -> [Γ |- A :⤳*: B]< wl > -> [Γ |- A :⤳*: B]< wl' > .
+  Proof.
+    intros f [] ; econstructor.
+    - now eapply wft_Ltrans.
+    - now eapply redty_Ltrans.
+  Qed.
+  
   (** Almost all of the RedTermProperties can be derived 
     for the well-formed reduction [Γ |- t :⤳*: u : A]
     but for application (which requires stability of typing under substitution). *)
@@ -968,6 +976,13 @@ Section GenericConsequences.
     intros ???; constructor; tea; gen_typing.
   Qed.
 
+  Lemma redtmwf_Ltrans {wl wl' Γ t u A} :
+    wl' ≤ε wl -> [Γ |- t :⤳*: u : A]< wl > -> [Γ |- t :⤳*: u : A]< wl' > .
+  Proof.
+    intros f [] ; econstructor.
+    - now eapply ty_Ltrans.
+    - now eapply redtm_Ltrans.
+  Qed.
   
   (** *** Properties of well-typing *)
 
@@ -1415,7 +1430,23 @@ Section GenericConsequences.
     all: now eapply redty_sound.
   Qed.
 
+  Lemma whredty_Ltrans {wl wl' Γ A B} :
+    wl' ≤ε wl -> [Γ |- A ↘ B]< wl > -> [Γ |- A ↘ B]< wl' > .
+  Proof.
+    intros f [] ; econstructor.
+    - now eapply redty_Ltrans.
+    - assumption.
+  Qed.
+  
+  Lemma whredtm_Ltrans {wl wl' Γ t u A} :
+    wl' ≤ε wl -> [Γ |- t ↘ u : A]< wl > -> [Γ |- t ↘ u : A]< wl' > .
+  Proof.
+    intros f [] ; econstructor.
+    - now eapply redtm_Ltrans.
+    - assumption.
+  Qed.
 
+  
   Lemma isWfFun_isFun : forall l Γ A B t, isWfFun l Γ A B t -> isFun t.
   Proof.
   intros * []; constructor; now eapply convneu_whne.

@@ -132,15 +132,15 @@ Proof.
   - now eapply redtmwf_conv.
   - eapply (convtm_conv refl).
     now apply eqPi.
-  - destruct isfun as [A'' t' eqdom eqapp| ] ; cbn in *.
+  - destruct isfun as [A'' t' funtree eqdom eqapp| ] ; cbn in *.
     + econstructor.
       * intros ; now eapply eqv.(eqvShp).
       * intros; unshelve eapply eqv.(eqvPos); [| | | eauto ] ; cbn in *.
         -- now apply eqv.(eqvShp).
-        -- do 2 (eapply over_tree_fusion_l) ; eassumption.
-        -- eapply over_tree_fusion_r, over_tree_fusion_l ; eassumption.
+        -- do 2 (eapply over_tree_fusion_l) ; exact Ho'.
+        -- eapply over_tree_fusion_r, over_tree_fusion_l ; exact Ho'.
         -- eapply eqapp.
-           eapply over_tree_fusion_r ; eassumption.
+           eapply over_tree_fusion_r ; exact Ho'.
     + constructor; now eapply convneu_conv.
   - intros; unshelve eapply eqv.(eqvPos).
     now apply eqv.(eqvShp).

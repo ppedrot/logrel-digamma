@@ -433,11 +433,13 @@ Notation "[ Γ ||-Π A ≅ B | ΠA ]< k >" := (PiRedTyEq (k := k) (Γ:=Γ) (A:=A
 Inductive isLRFun `{ta : tag} `{WfContext ta}
   `{WfType ta} `{ConvType ta} `{RedType ta} `{Typing ta} `{ConvTerm ta} `{ConvNeuConv ta}
   {k : wfLCon} {Γ : context} {A : term} (ΠA : PiRedTy k Γ A)
-  (funTree : forall {Δ k'} {a} (ρ : Δ ≤ Γ) (f : k' ≤ε k)
-                    (Hd : [ |-[ ta ] Δ ]< k' >)
-                    (ha : [ ΠA.(PolyRedPack.shpRed) ρ f Hd | Δ ||- a : ΠA.(PiRedTy.dom)⟨ρ⟩]< k' >),
-      DTree k') : term -> Type :=
-| LamLRFun : forall A' t : term,
+   : term -> Type :=
+| LamLRFun : forall
+    (A' t : term)
+    (funTree : forall {Δ k'} {a} (ρ : Δ ≤ Γ) (f : k' ≤ε k)
+                      (Hd : [ |-[ ta ] Δ ]< k' >)
+                      (ha : [ ΠA.(PolyRedPack.shpRed) ρ f Hd | Δ ||- a : ΠA.(PiRedTy.dom)⟨ρ⟩]< k' >),
+        DTree k'),
     (forall {Δ k'} (ρ : Δ ≤ Γ) (f : k' ≤ε k) (h : [ |- Δ ]< k' >)
             (domRed:= ΠA.(PolyRedPack.shpRed) ρ f h),
         [domRed | Δ ||- (PiRedTy.dom ΠA)⟨ρ⟩ ≅ A'⟨ρ⟩]< k' >) ->
@@ -446,8 +448,8 @@ Inductive isLRFun `{ta : tag} `{WfContext ta}
       forall {k''} (Ho : over_tree k' k'' (ΠA.(PolyRedPack.posTree) ρ f h ha))
              (Ho' : over_tree k' k'' (funTree ρ f h ha)),
         [ΠA.(PolyRedPack.posRed) ρ f h ha Ho | Δ ||- t[a .: (ρ >> tRel)] : ΠA.(PiRedTy.cod)[a .: (ρ >> tRel)]]< k'' >) ->
-    isLRFun ΠA (@funTree) (tLambda A' t)
-| NeLRFun : forall f : term, [Γ |- f ~ f : tProd (PiRedTy.dom ΠA) (PiRedTy.cod ΠA)]< k > -> isLRFun ΠA (@funTree) f.
+    isLRFun ΠA (tLambda A' t)
+| NeLRFun : forall f : term, [Γ |- f ~ f : tProd (PiRedTy.dom ΠA) (PiRedTy.cod ΠA)]< k > -> isLRFun ΠA f.
 
 Module PiRedTm.
 
@@ -464,7 +466,7 @@ Module PiRedTm.
              (Hd : [ |-[ ta ] Δ ]< k' >)
              (ha : [ ΠA.(PolyRedPack.shpRed) ρ f Hd | Δ ||- a : ΠA.(PiRedTy.dom)⟨ρ⟩]< k' >),
         DTree k' ;
-    isfun : isLRFun ΠA (@appTree) nf;
+    isfun : isLRFun ΠA nf;
     app {Δ a k'} (ρ : Δ ≤ Γ) :
       forall (f : k' ≤ε k)
              (Hd : [ |-[ ta ] Δ ]< k' >)
@@ -546,15 +548,15 @@ Inductive isLRPair `{ta : tag} `{WfContext ta}
 | PairLRpair : forall (A' B' a b : term)
   (rdom : forall {Δ k'} (ρ : Δ ≤ Γ) (f : k' ≤ε k) (h : [ |- Δ ]< k' >),
       [ΣA.(PolyRedPack.shpRed) ρ f h | Δ ||- (SigRedTy.dom ΣA)⟨ρ⟩ ≅ A'⟨ρ⟩]< k' >)
-  (codTree : forall {Δ k'} (ρ : Δ ≤ Γ) (f : k' ≤ε k)
+  (codTree : forall {Δ k' a'} (ρ : Δ ≤ Γ) (f : k' ≤ε k)
                     (Hd : [ |-[ ta ] Δ ]< k' >)
-                    (ha : [ ΣA.(PolyRedPack.shpRed) ρ f Hd | Δ ||- a : ΣA.(PiRedTy.dom)⟨ρ⟩ ]< k' >),
+                    (ha : [ ΣA.(PolyRedPack.shpRed) ρ f Hd | Δ ||- a' : ΣA.(PiRedTy.dom)⟨ρ⟩ ]< k' >),
       DTree k')
-  (rcod : forall {Δ k'} (ρ : Δ ≤ Γ) (f : k' ≤ε k) (h : [ |- Δ ]< k' >)
-                 (ha : [ ΣA.(PolyRedPack.shpRed) ρ f h | Δ ||- a : ΣA.(PiRedTy.dom)⟨ρ⟩ ]< k' >),
+  (rcod : forall {Δ k' a'} (ρ : Δ ≤ Γ) (f : k' ≤ε k) (h : [ |- Δ ]< k' >)
+                 (ha : [ ΣA.(PolyRedPack.shpRed) ρ f h | Δ ||- a' : ΣA.(PiRedTy.dom)⟨ρ⟩ ]< k' >),
     forall {k''} (Ho : over_tree k' k'' (ΣA.(PolyRedPack.posTree) ρ f h ha))
            (Ho' : over_tree k' k'' (codTree ρ f h ha)),
-      [ΣA.(PolyRedPack.posRed) ρ f h ha Ho | Δ ||- (SigRedTy.cod ΣA)[a .: (ρ >> tRel)] ≅ B'[a .: (ρ >> tRel)]]< k'' >)
+      [ΣA.(PolyRedPack.posRed) ρ f h ha Ho | Δ ||- (SigRedTy.cod ΣA)[a' .: (ρ >> tRel)] ≅ B'[a' .: (ρ >> tRel)]]< k'' >)
   (rfst : forall {Δ k'} (ρ : Δ ≤ Γ) (f : k' ≤ε k) (h : [ |- Δ ]< k' >),
       [ΣA.(PolyRedPack.shpRed) ρ f h | Δ ||- a⟨ρ⟩ : (SigRedTy.dom ΣA)⟨ρ⟩]< k' >)
   (rsndTree : forall {Δ k'} (ρ : Δ ≤ Γ) (f : k' ≤ε k)
@@ -564,7 +566,6 @@ Inductive isLRPair `{ta : tag} `{WfContext ta}
     forall {k''} (Ho : over_tree k' k'' (ΣA.(PolyRedPack.posTree) ρ f h (rfst ρ f h)))
            (Ho' : over_tree k' k'' (rsndTree ρ f h)),
       [ΣA.(PolyRedPack.posRed) ρ f h (rfst ρ f h) Ho | Δ ||- b⟨ρ⟩ : (SigRedTy.cod ΣA)[a⟨ρ⟩ .: (ρ >> tRel)] ]< k'' >),
-
   isLRPair ΣA (tPair A' B' a b)
 
 | NeLRPair : forall p : term, [Γ |- p ~ p : tSig (SigRedTy.dom ΣA) (SigRedTy.cod ΣA)]< k > ->
@@ -587,8 +588,8 @@ Module SigRedTm.
       forall (f : k' ≤ε k) (Hd : [ |-[ ta ] Δ ]< k' >),
         DTree k' ;
     ispair : isLRPair ΣA nf;
-    sndRed  {Δ} (ρ : Δ ≤ Γ) :
-      forall k' (f : k' ≤ε k) (Hd : [ |-[ ta ] Δ ]< k' >),
+    sndRed  {Δ k'} (ρ : Δ ≤ Γ) :
+      forall (f : k' ≤ε k) (Hd : [ |-[ ta ] Δ ]< k' >),
       forall {k''} (Ho : over_tree k' k'' (ΣA.(PolyRedPack.posTree) ρ f Hd _))
       (Ho' : over_tree k' k'' (sndTree ρ f Hd)),
         [ ΣA.(PolyRedPack.posRed) ρ f Hd (fstRed ρ f Hd) Ho | Δ ||- tSnd nf⟨ρ⟩ : _]< k'' > ;

@@ -17,7 +17,7 @@ Section UniverseReducibility.
     : [ LogRel@{i j k l} zero | Γ ||- A]< wl >.
   Proof.
     assert [ LogRel@{i j k l} one | Γ ||- A : U | LRU_@{i j k l} (redUOne rU)]< wl >
-             as [ _ _ _ _ _ hA ] by irrelevance.
+             as [ _ _ _ _ hA ] by irrelevance.
     exact (LRCumulative hA).
   Qed.
 
