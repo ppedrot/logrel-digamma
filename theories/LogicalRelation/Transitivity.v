@@ -20,6 +20,14 @@ Set Printing Primitive Projection Parameters.
   [Γ ||-<lA> A ≅ C | RA]< wl >.
  Proof. now eapply LRTransEq. Qed.
 
+ Lemma WtransEq@{i j k l} {wl Γ A B C lA lB} 
+  {RA : WLogRel@{i j k l} lA wl Γ A }
+  {RB : WLogRel@{i j k l} lB wl Γ B }
+  (RAB : W[Γ ||-<lA> A ≅ B | RA]< wl >)
+   (RBC : W[Γ ||-<lB> B ≅ C | RB]< wl >) :
+  W[Γ ||-<lA> A ≅ C | RA]< wl >.
+ Proof. now eapply WLRTransEq. Qed.
+
 
 Lemma transEqTermU@{h i j k} {wl Γ l UU t u v} {h : [Γ ||-U<l> UU]< wl >} :
   [LogRelRec@{i j k} l | Γ ||-U t ≅ u : UU| h]< wl > ->
@@ -260,6 +268,18 @@ Proof.
   - intros; now eapply transTmEqId.
 Qed.
 
+Lemma WtransEqTerm@{h i j k l} {wl Γ lA A t u v} 
+  {RA : WLogRel@{i j k l} lA wl Γ A} :
+  W[Γ ||-<lA> t ≅ u : A | RA]< wl > ->
+  W[Γ ||-<lA> u ≅ v : A | RA]< wl > ->
+  W[Γ ||-<lA> t ≅ v : A | RA]< wl >.
+Proof.
+  intros [d Hd] [d' Hd'].
+  exists (DTree_fusion _ d d').
+  intros wl' Hover Hover' ; eapply transEqTerm.
+  - eapply Hd ; now eapply over_tree_fusion_l.
+  - eapply Hd' ; now eapply over_tree_fusion_r.
+Qed.  
 
 #[global]
 Instance perLRTmEq@{i j k l} {wl Γ l A} (RA : [LogRel@{i j k l} l | Γ ||- A]< wl >):
@@ -270,6 +290,15 @@ Proof.
   - intros ???; now eapply transEqTerm.
 Qed.
 
+#[global]
+Instance perWLRTmEq@{i j k l} {wl Γ l A} (RA : WLogRel@{i j k l} l wl Γ A):
+  Coq.Classes.CRelationClasses.PER@{Set k} (fun t u => W[ _ ||-< l > t ≅ u : _ | RA]< wl >).
+Proof.
+  econstructor.
+  - intros ???; now eapply WLRTmEqSym.
+  - intros ???; now eapply WtransEqTerm.
+Qed.
+
 Lemma LREqTermSymConv {wl Γ t u G G' l RG RG'} :
   [Γ ||-<l> t ≅ u : G | RG]< wl > -> 
   [Γ ||-<l> G' ≅ G | RG']< wl > ->
@@ -278,7 +307,17 @@ Proof.
   intros Rtu RGG'.
   eapply LRTmEqSym; eapply LRTmEqRedConv; tea.
   now eapply LRTyEqSym.
-Qed.  
+Qed.
+
+Lemma WLREqTermSymConv {wl Γ t u G G' l RG RG'} :
+  W[Γ ||-<l> t ≅ u : G | RG]< wl > -> 
+  W[Γ ||-<l> G' ≅ G | RG']< wl > ->
+  W[Γ ||-<l> u ≅ t : G' | RG']< wl >.
+Proof.
+  intros Rtu RGG'.
+  eapply WLRTmEqSym; eapply WLRTmEqRedConv; tea.
+  now eapply WLRTyEqSym.
+Qed.
 
 Lemma LREqTermHelper {wl Γ t t' u u' G G' l RG RG'} :
   [Γ ||-<l> t ≅ u : G | RG]< wl > -> 
@@ -290,7 +329,19 @@ Proof.
   intros Rtu Rtu' RGG' Ruu'.
   do 2  (eapply transEqTerm; tea).
   now eapply LREqTermSymConv.
-Qed.  
+Qed.
+
+Lemma WLREqTermHelper {wl Γ t t' u u' G G' l RG RG'} :
+  W[Γ ||-<l> t ≅ u : G | RG]< wl > -> 
+  W[Γ ||-<l> t' ≅ u' : G' | RG']< wl > -> 
+  W[Γ ||-<l> G ≅ G' | RG]< wl > ->
+  W[Γ ||-<l> u ≅ u' : G | RG]< wl > -> 
+  W[Γ ||-<l> t ≅ t' : G | RG]< wl >.
+Proof.
+  intros Rtu Rtu' RGG' Ruu'.
+  do 2  (eapply WtransEqTerm; tea).
+  now eapply WLREqTermSymConv.
+Qed. 
 
 End Transitivity.
 

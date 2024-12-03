@@ -197,7 +197,20 @@ Proof.
   - now inversion H.
 Qed.
 
-Lemma over_tree_LTrans (k k' k'' : wfLCon) (f : k' ≤ε k) (d : DTree k) :
+Lemma le_over_tree {k k' k'' d} : k'' ≤ε k' -> over_tree k k' d -> over_tree k k'' d.
+Proof.
+  induction d as [ | k n ne kt IHt kf IHf] ; cbn ; intros Hinf Hinf' ; auto.
+  - now eapply wfLCon_le_trans.
+  - destruct (decidInLCon k' n).
+    + erewrite (decidInLCon_true (Hinf _ _ i)).
+      now eapply IHt.
+    + erewrite (decidInLCon_false (Hinf _ _ i)).
+      now eapply IHf.
+    + now inversion Hinf'.
+Qed.
+  
+
+Lemma over_tree_Ltrans (k k' k'' : wfLCon) (f : k' ≤ε k) (d : DTree k) :
   over_tree k' k'' (DTree_Ltrans k k' f d) -> over_tree k k'' d.
 Proof.
   intros Hyp ; assert (f' : k'' ≤ε k') by now eapply over_tree_le.
@@ -224,6 +237,23 @@ Proof.
       * assumption.
 Qed.
 
+Lemma Ltrans_over_tree (k k' k'' : wfLCon) (f : k' ≤ε k) (f' : k'' ≤ε k') (d : DTree k) :
+  over_tree k k'' d -> over_tree k' k'' (DTree_Ltrans k k' f d).
+Proof.
+  revert k' k'' f f' ; induction d as [  | k n ne kt IHt kf IHf] ; intros * f' ; cbn.
+  - now eauto.
+  - destruct (decidInLCon k' n).
+    + rewrite (decidInLCon_true (f' n _ i)) ; intros H.
+      now eapply IHt.
+    + rewrite (decidInLCon_false (f' n _ i)) ; intros H.
+      now eapply IHf.
+    + cbn in *.
+      destruct (decidInLCon k'' n) ; cbn ; intros H ; eauto.
+      * eapply IHt ; eauto.
+        now eapply LCon_le_in_LCon ; eauto.
+      * eapply IHf ; eauto.
+        now eapply LCon_le_in_LCon ; eauto.
+Qed.
       
 Lemma over_tree_fusion_l k k' d d' :
   over_tree k k' (DTree_fusion k d d') ->
@@ -247,17 +277,18 @@ Proof.
   - eassumption.
   - cbn in * ; subst.
     destruct (decidInLCon k' n).
-    + eapply over_tree_LTrans, IHt ; eassumption.
-    + eapply over_tree_LTrans, IHf ; eassumption.
+    + eapply over_tree_Ltrans, IHt ; eassumption.
+    + eapply over_tree_Ltrans, IHf ; eassumption.
     + now inversion Hov.
 Qed.
 
 Arguments over_tree_fusion_l [_ _ _ _] _.
 Arguments over_tree_fusion_r [_ _ _ _] _.
 
-Lemma split_to_over_tree (wl : wfLCon)
+Lemma split_to_over_tree 
   (P : wfLCon -> Type)
   (Pe : forall wl n (ne : not_in_LCon (pi1 wl) n), P (wl ,,l (ne, true)) -> P (wl ,,l (ne, false)) -> P wl)
+  (wl : wfLCon)
   (d : DTree wl)
   (H : forall wl', over_tree wl wl' d -> P wl') : P wl. 
 Proof.
@@ -276,6 +307,66 @@ Proof.
       unshelve erewrite (decidInLCon_false _) ; [ | assumption].
       apply (over_tree_le Hover) ; now constructor.
 Qed.
+
+Lemma dsplit_to_over_tree (wl : wfLCon)
+  (P : forall wl', wl' ≤ε wl -> Type)
+  (Pe : forall wl' n (ne : not_in_LCon (pi1 wl') n) f ft ff,
+      P (wl' ,,l (ne, true)) ft -> P (wl' ,,l (ne, false)) ff -> P wl' f)
+  (d : DTree wl)
+  (H : forall wl' f, over_tree wl wl' d -> P wl' f) : P wl (idε _). 
+Proof.
+  enough (Hyp : forall wl' f, P wl' f) by apply Hyp.
+  revert P Pe H.
+  induction d ; intros P Pe H wl' f.
+  - now apply H.
+  - cbn in * ; destruct (decidInLCon wl' n).
+    + pose proof (Hinf := LCon_le_step (l := k) (b := true) ne (wfLCon_le_id _)).
+      specialize (IHd1 (fun wl' f => P wl' (wfLCon_le_trans f Hinf))).
+      cbn in *.
+      assert (Hinf' : wl' ≤ε (k,,l (ne, true))).
+      { now eapply LCon_le_in_LCon. }
+      change (P wl' (Hinf' •ε Hinf)).
+      eapply IHd1.
+      * intros ; eauto.
+      * intros wl'' f' Hover.
+        apply H ; cbn.
+        unshelve erewrite (decidInLCon_true _) ; [ | assumption].
+        now eapply f'; econstructor.
+    + pose proof (Hinf := LCon_le_step (l := k) (b := false) ne (wfLCon_le_id _)).
+      specialize (IHd2 (fun wl' f => P wl' (wfLCon_le_trans f Hinf))).
+      cbn in *.
+      assert (Hinf' : wl' ≤ε (k,,l (ne, false))).
+      { now eapply LCon_le_in_LCon. }
+      change (P wl' (Hinf' •ε Hinf)).
+      eapply IHd2.
+      * intros ; eauto.
+      * intros wl'' f' Hover.
+        apply H ; cbn.
+        unshelve erewrite (decidInLCon_false _) ; [ | assumption].
+        now eapply f'; econstructor.
+    + unshelve eapply (Pe _ _ n0).
+      1,2: now eapply wfLCon_le_trans ; [ eapply LCon_le_step | eapply (idε _)].
+      * pose proof (Hinf := LCon_le_step (l := k) (b := true) ne (wfLCon_le_id _)).
+        specialize (IHd1 (fun wl' f => P wl' (wfLCon_le_trans f Hinf))).
+        cbn in *.
+        pose proof (Hinf' := LCon_le_up (b := true) ne n0 f).
+        change (P (wl',,l (n0, true)) (Hinf' •ε Hinf)).
+        eapply IHd1 ; [now eauto |..].
+        intros wl'' f' Hover.
+        eapply H.
+        unshelve erewrite (decidInLCon_true _) ; [ | assumption].
+        now eapply f'; econstructor.
+      * pose proof (Hinf := LCon_le_step (l := k) (b := false) ne (wfLCon_le_id _)).
+        specialize (IHd2 (fun wl' f => P wl' (wfLCon_le_trans f Hinf))).
+        cbn in *.
+        pose proof (Hinf' := LCon_le_up (b := false) ne n0 f).
+        change (P (wl',,l (n0, false)) (Hinf' •ε Hinf)).
+        eapply IHd2 ; [now eauto |..].
+        intros wl'' f' Hover.
+        eapply H.
+        unshelve erewrite (decidInLCon_false _) ; [ | assumption].
+        now eapply f'; econstructor.
+Qed.        
 
 Section Typing.
 

@@ -873,6 +873,24 @@ Proof.
   now apply h.
 Defined.
 
+Corollary WLRTransEq@{i j k l} 
+  (wl : wfLCon) (Γ : context) (A B C : term) {lA lB} 
+  (RA : WLogRel@{i j k l} lA wl Γ A)
+  (RB : WLogRel@{i j k l} lB wl Γ B)
+  (RAB : WLogRelEq@{i j k l} lA wl Γ A B RA)
+  (RBC : WLogRelEq@{i j k l} lB wl Γ B C RB) :
+  W[Γ ||-<lA> A ≅ C | RA]< wl >.
+Proof.
+  exists (DTree_fusion _ (DTree_fusion _ (WT _ RB) (WTEq _ RBC)) (WTEq _ RAB)).
+  intros wl' Hover Hover'.
+  eapply LRTransEq.
+  - unshelve eapply (WRedEq _ RAB).
+    now eapply over_tree_fusion_r.
+  - unshelve eapply (WRedEq _ RBC).
+    + now eapply over_tree_fusion_l, over_tree_fusion_l.
+    + now eapply over_tree_fusion_r, over_tree_fusion_l.
+Defined.
+
 
 Theorem LRCumulative@{i j k l i' j' k' l'} {lA}
   {wl : wfLCon} {Γ : context} {A : term}
@@ -922,6 +940,20 @@ Proof.
   revert lrA'; rewrite <- e; now apply LRTyEqIrrelevantCum.
 Qed.
 
+Corollary WLRTyEqIrrelevant'@{i j k l} lA lA' wl Γ A A' (e : A = A')
+  (lrA : WLogRel@{i j k l} lA wl Γ A) (lrA' :WLogRel@{i j k l} lA' wl Γ A') :
+  forall B, W[Γ ||-< lA > A ≅ B | lrA]< wl > -> W[Γ ||-< lA' > A' ≅ B | lrA']< wl >.
+Proof.
+  intros B [] ; unshelve econstructor.
+  - eapply DTree_fusion.
+    + exact WTEq.
+    + exact (WT _ lrA).
+  - intros wl' Hover Hover' ; eapply LRTyEqIrrelevant' ; [eassumption | ].
+    unshelve eapply WRedEq.
+    + now eapply over_tree_fusion_r.
+    + now eapply over_tree_fusion_l.
+Qed.
+
 #[local]
 Corollary RedTmIrrelevantCum wl Γ A {lA eqTyA redTmA eqTmA lA' eqTyA' redTmA' eqTmA'}
   (lrA : LogRel lA wl Γ A eqTyA redTmA eqTmA) (lrA' : LogRel lA' wl Γ A eqTyA' redTmA' eqTmA') :
@@ -952,6 +984,20 @@ Corollary LRTmRedIrrelevant'@{i j k l} lA lA' wl Γ A A' (e : A = A')
   forall t, [Γ ||-< lA > t : A | lrA]< wl > -> [Γ ||-< lA' > t : A' | lrA']< wl >.
 Proof.
   revert lrA'; rewrite <- e; now apply LRTmRedIrrelevantCum.
+Qed.
+
+Corollary WLRTmRedIrrelevant'@{i j k l} lA lA' wl Γ A A' (e : A = A')
+  (lrA : WLogRel@{i j k l} lA wl Γ A) (lrA' :WLogRel@{i j k l} lA' wl Γ A') :
+  forall t, W[Γ ||-< lA > t : A | lrA]< wl > -> W[Γ ||-< lA' > t : A' | lrA']< wl >.
+Proof.
+  intros t [] ; unshelve econstructor.
+  - eapply DTree_fusion.
+    + exact WTTm.
+    + exact (WT _ lrA).
+  - intros wl' Hover Hover' ; eapply LRTmRedIrrelevant' ; [eassumption | ].
+    unshelve eapply WRedTm.
+    + now eapply over_tree_fusion_r.
+    + now eapply over_tree_fusion_l.
 Qed.
 
 
@@ -987,6 +1033,19 @@ Proof.
   revert lrA'; rewrite <- e; now apply LRTmEqIrrelevantCum.
 Qed.
 
+Corollary WLRTmEqIrrelevant'@{i j k l} lA lA' wl Γ A A' (e : A = A')
+  (lrA : WLogRel@{i j k l} lA wl Γ A) (lrA' :WLogRel@{i j k l} lA' wl Γ A') :
+  forall t u, W[Γ ||-< lA > t ≅ u : A | lrA]< wl > -> W[Γ ||-< lA' > t ≅ u : A' | lrA']< wl >.
+Proof.
+  intros t u [] ; unshelve econstructor.
+  - eapply DTree_fusion.
+    + exact WTTmEq.
+    + exact (WT _ lrA).
+  - intros wl' Hover Hover' ; eapply LRTmEqIrrelevant' ; [eassumption | ].
+    unshelve eapply WRedTmEq.
+    + now eapply over_tree_fusion_r.
+    + now eapply over_tree_fusion_l.
+Qed.
 
 
 Corollary TyEqSym wl Γ A A' {lA eqTyA redTmA eqTmA lA' eqTyA' redTmA' eqTmA'}
@@ -1007,6 +1066,18 @@ Proof.
   now eapply TyEqSym.
 Qed.
 
+Corollary WLRTyEqSym lA lA' wl Γ A A' (lrA : W[Γ ||-< lA > A]< wl >) (lrA' : W[Γ ||-< lA'> A']< wl >) :
+  W[Γ ||-< lA > A ≅ A' | lrA]< wl > -> W[Γ ||-< lA' > A' ≅ A | lrA']< wl >.
+Proof.
+  destruct lrA as [d Hd], lrA' as [d' Hd'].
+  intros [deq Hdeq] ; cbn in *.
+  exists (DTree_fusion _ d deq).
+  intros wl' Hover Hover' ; eapply LRTyEqSym.
+  unshelve eapply Hdeq.
+  - now eapply over_tree_fusion_l.
+  - now eapply over_tree_fusion_r.
+Qed.
+
 #[local]
 Corollary RedTmConv wl Γ A A' {lA eqTyA redTmA eqTmA lA' eqTyA' redTmA' eqTmA'}
   (lrA : LogRel lA wl Γ A eqTyA redTmA eqTmA) (lrA' : LogRel lA' wl Γ A' eqTyA' redTmA' eqTmA') :
@@ -1023,6 +1094,21 @@ Proof.
   destruct lrA, lrA'.
   cbn in *.
   now eapply RedTmConv.
+Qed.
+
+Corollary WLRTmRedConv lA lA' wl Γ A A' (lrA : W[Γ ||-< lA > A]< wl >) (lrA' : W[Γ ||-< lA'> A' ]< wl >) :
+  W[Γ ||-< lA > A ≅ A' | lrA ]< wl > ->
+  forall t, W[Γ ||-< lA > t : A | lrA]< wl > -> W[Γ ||-< lA' > t : A' | lrA']< wl >.
+Proof.
+  destruct lrA as [d Hd], lrA' as [d' Hd'].
+  intros [deq Hdeq] t [deqt Hdeqt] ; cbn in *.
+  exists (DTree_fusion _ (DTree_fusion _ d deq) deqt).
+  intros wl' Hover Hover' ; eapply LRTmRedConv.
+  - cbn in *. unshelve eapply Hdeq.
+    + now do 2 (eapply over_tree_fusion_l).
+    + now eapply over_tree_fusion_r, over_tree_fusion_l.
+  - eapply Hdeqt.
+    now eapply over_tree_fusion_r.
 Qed.
 
 Corollary PolyRedEqSym {wl Γ l l' shp shp' pos pos'}
@@ -1066,6 +1152,25 @@ Proof.
   destruct lrA, lrA'.
   cbn in *.
   now eapply TmEqRedConv.
+Qed.
+
+Corollary WLRTmEqRedConv lA lA' wl Γ A A' (lrA : W[Γ ||-< lA > A]< wl >) (lrA' : W[Γ ||-< lA'> A']< wl >) :
+  W[Γ ||-< lA > A ≅ A' | lrA ]< wl > ->
+  forall t u, W[Γ ||-< lA > t ≅ u : A | lrA]< wl > -> W[Γ ||-< lA' > t ≅ u : A' | lrA']< wl >.
+Proof.
+  destruct lrA, lrA' ; intros [WEq WRedEq] t u [WTmEq WRedTmEq].
+  unshelve econstructor.
+  + eapply DTree_fusion ; [eapply DTree_fusion | ].
+    * exact WEq.
+    * exact WT.
+    * exact WTmEq.
+  + intros wl' Hover Hover' ; cbn in *.
+    eapply LRTmEqRedConv.
+    2: unshelve eapply WRedTmEq.
+    eapply WRedEq.
+    * now do 2 (eapply over_tree_fusion_l).
+    * now eapply over_tree_fusion_r, over_tree_fusion_l.
+    * now eapply over_tree_fusion_r.
 Qed.
 
 Corollary LRTmTmEqIrrelevant' lA lA' wl Γ A A' (e : A = A')
@@ -1134,6 +1239,13 @@ Proof.
     1: now symmetry.
     destruct hprop; econstructor; tea.
     now eapply NeNfEqSym.    
+Qed.
+
+Lemma WLRTmEqSym@{h i j k l} lA wl Γ A (lrA : WLogRel@{i j k l} lA wl Γ A) : forall t u,
+    W[Γ ||-<lA> t ≅ u : A |lrA]< wl > -> W[Γ ||-<lA> u ≅ t : A |lrA]< wl >.
+Proof.
+  intros t u [d Hd] ; exists d.
+  intros wl' Hover Hover' ; now eapply LRTmEqSym.
 Qed.
 
 End Irrelevances.
