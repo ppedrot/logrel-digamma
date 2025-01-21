@@ -131,6 +131,21 @@ Inductive DTree (k : wfLCon) : Type :=
   DTree (k ,,l (ne, false)) ->
   DTree k.
 
+Fixpoint DTree_bind (k : wfLCon) (F : forall k' (f : k' ≤ε k), DTree k')
+  (d : DTree k) : DTree k.
+Proof.
+  refine (match d with
+          | leaf _ => F k (wfLCon_le_id _)
+          | @ϝnode _ n ne dt df => @ϝnode _ n ne _ _
+          end).
+  + unshelve eapply DTree_bind ; [ | assumption].
+    intros k' f ; eapply F, wfLCon_le_trans ; [eassumption | ].
+    now eapply LCon_le_step, wfLCon_le_id.
+  + unshelve eapply DTree_bind ; [ | assumption].
+    intros k' f ; eapply F, wfLCon_le_trans ; [eassumption | ].
+    now eapply LCon_le_step, wfLCon_le_id.
+Defined.
+
 Fixpoint DTree_Ltrans (k k' : wfLCon) (f : k' ≤ε k) (d : DTree k) : DTree k'.
 Proof.
   refine (match d with
@@ -285,6 +300,143 @@ Qed.
 Arguments over_tree_fusion_l [_ _ _ _] _.
 Arguments over_tree_fusion_r [_ _ _ _] _.
 
+Fixpoint DTree_bind_over (k : wfLCon) (d : DTree k) :
+  (forall k' (H : over_tree k k' d), DTree k') -> DTree k.
+Proof.
+  refine (match d with
+          | leaf _ => fun F => _
+          | @ϝnode _ n ne dt df => fun F => _
+          end).
+  - now eapply F, wfLCon_le_id.
+  - eapply (@ϝnode _ n ne).
+    + unshelve eapply DTree_bind_over ; [ assumption | ].
+      intros k' f ; eapply F. cbn in *.
+      now rewrite (@decidInLCon_true k' n (over_tree_le f _ _ (in_here_l _))).
+    + unshelve eapply DTree_bind_over ; [ assumption | ].
+      intros k' f ; eapply F. cbn in *.
+      now rewrite (@decidInLCon_false k' n (over_tree_le f _ _ (in_here_l _))).
+Defined.
+
+Lemma DTree_bind_over_over k k' d P :
+  over_tree k k' (DTree_bind_over k d P) ->
+  over_tree k k' d.
+Proof.
+  induction d ; cbn in * ; intros H.
+  - now eapply over_tree_le.
+  - destruct (decidInLCon k' n) ; cbn in *.
+    + eapply IHd1.
+      eassumption.
+    + eapply IHd2.
+      eassumption.
+    + assumption.
+Qed.
+
+Fixpoint DTree_path (k k' : wfLCon) (d : DTree k) :
+  over_tree k k' d -> wfLCon.
+Proof.
+  refine (match d with
+          | leaf _ => fun H => k
+          | @ϝnode _ n ne dt df => _
+          end).
+  cbn in *.
+  refine (match decidInLCon k' n with
+          | or_inltrue _ => _
+          | or_inlfalse _ => _
+          | or_notinl _ => _
+          end).
+  all: refine (fun H => _).
+  1,2: exact (DTree_path _ _ _ H).
+  now inversion H.
+Defined.
+
+Lemma DTree_path_le k k' d (Hover : over_tree k k' d) :
+  (DTree_path k k' d Hover) ≤ε k.
+Proof.
+  induction d ; cbn.
+  - now eapply wfLCon_le_id.
+  - cbn in *.
+    revert Hover ; destruct (decidInLCon k' n) ; intros Hover.
+    + eapply wfLCon_le_trans ; [eapply IHd1 | ].
+      now eapply LCon_le_step, wfLCon_le_id.
+    + eapply wfLCon_le_trans ; [eapply IHd2 | ].
+      now eapply LCon_le_step, wfLCon_le_id.
+    + now destruct Hover.
+Qed.
+    
+Fixpoint DTree_path_over k k' d :
+  forall Hover : over_tree k k' d,
+    over_tree k (DTree_path k k' d Hover) d.
+Proof.
+  refine (match d as d0 return
+                forall Hover,
+                  over_tree k (DTree_path k k' d0 Hover) d0
+          with
+          | leaf _ => fun Hover => _
+          | @ϝnode _ n ne dt df => _
+          end).
+  - now eapply wfLCon_le_id.
+  - cbn in *.
+     destruct (decidInLCon k' n) ; cbn in * ; intros Hover.
+    + rewrite (decidInLCon_true (DTree_path_le _ k' dt Hover _ _ (in_here_l _))).
+      now eapply DTree_path_over.
+    + rewrite (decidInLCon_false (DTree_path_le _ k' df Hover _ _ (in_here_l _))).
+      now eapply DTree_path_over.
+    + now destruct Hover.
+Defined.
+
+Lemma DTree_path_inf k k' d Hover :
+  k' ≤ε (DTree_path k k' d Hover).
+Proof.
+  induction d as [  | k n ne kt IHt kf IHf] ; cbn in * ; [assumption | ].
+  destruct (decidInLCon k' n) ; cbn in *.
+  - now apply IHt.
+  - now apply IHf.
+  - now inversion Hover.
+Qed.
+
+
+Lemma DTree_bind_DTree_path (k k' : wfLCon) (d : DTree k)
+  (P : forall k' (H : over_tree k k' d), DTree k')
+  (Hover : over_tree k k' d)
+  (Hover' : over_tree k k' (DTree_bind_over k d P)) :
+  over_tree (DTree_path k k' d Hover) k' (P _ (DTree_path_over k k' d Hover)).
+Proof.
+  revert P Hover Hover'.
+  induction d as [  | k n ne kt IHt kf IHf] ; cbn in * ; intros.
+  - assumption.
+  - destruct (decidInLCon k' n) ; cbn in *.
+    + set (P' := fun (k' : wfLCon) (f : over_tree (k,,l (ne, true)) k' kt) =>
+                 P k'
+                   (@eq_sind_r (or_inLCon k' n)
+                      (@or_inltrue k' n
+                         (@over_tree_le (k,,l (ne, true)) k' kt f n true (@in_here_l k n true)))
+                      (fun o : or_inLCon k' n =>
+                       match o with
+                       | @or_inltrue _ _ _ => over_tree (k,,l (ne, true)) k' kt
+                       | @or_inlfalse _ _ _ => over_tree (k,,l (ne, false)) k' kf
+                       | @or_notinl _ _ _ => SFalse
+                       end) f (decidInLCon k' n)
+                      (@decidInLCon_true k' n
+                         (@over_tree_le (k,,l (ne, true)) k' kt f n true (@in_here_l k n true))))).
+      now eapply (IHt P' Hover Hover').
+    + set (P' := fun (k' : wfLCon) (f : over_tree (k,,l (ne, false)) k' kf) =>
+                 P k'
+                   (@eq_sind_r (or_inLCon k' n)
+                      (@or_inlfalse k' n
+                         (@over_tree_le (k,,l (ne, _)) k' kf f n _ (@in_here_l k n _)))
+                      (fun o : or_inLCon k' n =>
+                       match o with
+                       | @or_inltrue _ _ _ => over_tree (k,,l (ne, true)) k' kt
+                       | @or_inlfalse _ _ _ => over_tree (k,,l (ne, false)) k' kf
+                       | @or_notinl _ _ _ => SFalse
+                       end) f (decidInLCon k' n)
+                      (@decidInLCon_false k' n
+                         (@over_tree_le (k,,l (ne, false)) k' kf f n _ (@in_here_l k n _))))).
+      now eapply (IHf P' Hover Hover').
+    + now destruct Hover.
+Qed.
+
+      
 Lemma split_to_over_tree 
   (P : wfLCon -> Type)
   (Pe : forall wl n (ne : not_in_LCon (pi1 wl) n), P (wl ,,l (ne, true)) -> P (wl ,,l (ne, false)) -> P wl)

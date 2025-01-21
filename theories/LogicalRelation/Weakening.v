@@ -27,11 +27,14 @@ Section Weakenings.
       irrelevance.
       cbn.
       assumption.
+    - intros ?? a b ρ' **.
+      unshelve eapply (posExtTree _ k' a b (ρ' ∘w ρ) f) ; eauto.
+      all: now irrelevance.
     - now eapply wft_wk.
     - eapply wft_wk; tea; eapply wfc_cons; tea; now eapply wft_wk.
     - intros ?? a b ρ'  wfΔ' ** ; cbn in *.
       replace (_[b .: ρ' >> tRel]) with (pos[ b .: (ρ' ∘w ρ) >> tRel]) by (now bsimpl).
-      unshelve epose (posExt _ _ a b (ρ' ∘w ρ) wfΔ' Hd _ _ _ k'' Ho) ; irrelevance.
+      unshelve epose (posExt _ _ a b (ρ' ∘w ρ) wfΔ' Hd _ _ _ k'' Hoa Hob Hoeq) ; irrelevance.
   Qed.
   
   Lemma wkΠ  {wl Γ Δ A l}
@@ -262,6 +265,10 @@ Lemma wkEq@{i j k l} {wl Γ Δ A B l} (ρ : Δ ≤ Γ) (wfΔ : [|-Δ]< wl >) (lr
       eapply DTree_fusion ; [apply (appTree _ _ a (ρ' ∘w ρ) f Hd) | eapply (PolyRed.posTree ΠA (ρ' ∘w ρ) f Hd)].
       all: irrelevance0 ; [ | eassumption] .
       all: subst ΠA'; bsimpl; try rewrite scons_comp'; reflexivity.
+    - intros ? a b ? ρ' f Hd ha hb hab.
+      eapply DTree_fusion ; [apply (eqTree _ a b _ (ρ' ∘w ρ) f Hd) | eapply (PolyRed.posExtTree ΠA (a:= a) (b:= b) (ρ' ∘w ρ) f Hd)].
+      all: irrelevance0 ; [ | eassumption] .
+      all: subst ΠA'; bsimpl; try rewrite scons_comp'; reflexivity.
     - now eapply redtmwf_wk.
     - now apply convtm_wk.
     - now apply isLRFun_ren.
@@ -272,12 +279,14 @@ Lemma wkEq@{i j k l} {wl Γ Δ A B l} (ρ : Δ ≤ Γ) (wfΔ : [|-Δ]< wl >) (lr
       + subst ΠA'; bsimpl; try rewrite scons_comp'; reflexivity.
       + now eapply over_tree_fusion_r.
       + now eapply over_tree_fusion_l.
-    - intros ??? wl' ρ' f ??????? ; cbn in *.
+    - intros ??? wl' ρ' f ????????? ; cbn in *.
       replace ((t ⟨ρ⟩)⟨ ρ' ⟩) with (t⟨ρ' ∘w ρ⟩) by now bsimpl.
       irrelevance0.
-      2: unshelve apply eq; [| | eassumption|..] ; auto ; try (subst ΠA'; irrelevance).
+      2: unshelve eapply (eq _ a b) ; [| | eassumption|..] ; auto ; try (subst ΠA'; irrelevance).
       + subst ΠA'; bsimpl; try rewrite scons_comp'; reflexivity.
       + now eapply over_tree_fusion_r.
+      + now eapply over_tree_fusion_l.
+      + now eapply over_tree_fusion_l.
       + now eapply over_tree_fusion_l.
   Defined.
 

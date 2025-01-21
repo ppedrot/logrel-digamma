@@ -129,6 +129,9 @@ Proof.
       * eapply (PolyRed.posTree ΠA) ; now eapply eqv.(eqvShp).
       * eapply eqv.(eqvTree) ; eauto. now eapply eqv.(eqvShp).
     + eapply appTree ; now eapply eqv.(eqvShp).
+  - intros ; eapply DTree_fusion.
+    + eapply (PolyRed.posExtTree ΠA (a := a) (b := b)) ; now eapply eqv.(eqvShp).
+    + eapply (eqTree _ a b) ; now eapply eqv.(eqvShp).
   - now eapply redtmwf_conv.
   - eapply (convtm_conv refl).
     now apply eqPi.
@@ -150,9 +153,9 @@ Proof.
     + eapply over_tree_fusion_r ; eassumption.
   - intros; unshelve eapply eqv.(eqvPos), eq.
     all: try now eapply eqv.(eqvShp).
+    3-5: eapply over_tree_fusion_r ; eassumption.
     + do 2 (eapply over_tree_fusion_l) ; eassumption.
     + eapply over_tree_fusion_r, over_tree_fusion_l ; eassumption.
-    + eapply over_tree_fusion_r ; eassumption.
 Defined.
 
 Lemma ΠIrrelevanceTmEq t u : [Γ ||-<lA> t ≅ u : A | RA]< wl > -> [Γ ||-<lA'> t ≅ u : A' | RA']< wl >.
@@ -731,22 +734,31 @@ Proof.
   + intros Δ wl' a ρ f tΔ ra wl'' Hover ; cbn in *.
     eapply IHpos.
     eapply over_tree_fusion_l ; eassumption.
+  + intros.
+    eapply (PA.(PolyRed.posExtTree) (a := a) (b := b)).
+    all: pose (shpRed := PA.(PolyRed.shpRed) ρ f Hd).
+    all: destruct (LRIrrelevantPreds IH _ _ _ _
+                  (LRAd.adequate shpRed)
+                  (LRAd.adequate (IHshp Δ _ ρ f Hd))
+                  (reflLRTyEq shpRed)) as [_ irrTmRed irrTmEq].
+    * now eapply (snd (irrTmRed a)).
+    * now eapply (snd (irrTmRed b)).
+    * now eapply (snd (irrTmEq a b)).
   + now destruct PA.
   + now destruct PA.
   + cbn. intros Δ wl' a b ρ f tΔ ra rb rab wl''.
     set (p := LRIrrelevantPreds _ _ _ _ _ _ _ _).
     destruct p as [_ irrTmRed irrTmEq].
     pose (ra' := snd (irrTmRed a) ra) ; cbn in *.
-    intros Hover.
-    pose (posRed := PA.(PolyRed.posRed) ρ f tΔ ra' (over_tree_fusion_r Hover)).
+    intros Hoa Hob Hoab.
+    pose (posRed := PA.(PolyRed.posRed) ρ f tΔ ra' (over_tree_fusion_r Hoa)).
     destruct (LRIrrelevantPreds IH _ _ _ _
                 (LRAd.adequate posRed)
-                (LRAd.adequate (IHpos Δ _ a ρ f tΔ ra' wl'' (over_tree_fusion_l Hover)))
+                (LRAd.adequate (IHpos Δ _ a ρ f tΔ ra' wl'' (over_tree_fusion_l Hoa)))
                 (reflLRTyEq posRed)) as [irrTyEq _ _].
     eapply (fst (irrTyEq (pos[b .: ρ >> tRel]))).
-    eapply PolyRed.posExt.
-    1: exact (snd (irrTmRed b) rb).
-    exact (snd (irrTmEq a b) rab).
+    eapply PolyRed.posExt ; [ | eassumption].
+    now eapply over_tree_fusion_r.
 Qed.
 
 
@@ -1182,6 +1194,15 @@ Proof.
   intros ?? []; split; [eapply LRTmRedIrrelevant'| eapply LRTmEqIrrelevant']; tea.
 Qed.
 
+Corollary WLRTmTmEqIrrelevant' lA lA' wl Γ A A' (e : A = A')
+  (lrA : W[Γ ||-< lA > A]< wl >) (lrA' : W[Γ ||-< lA'> A']< wl >) :
+  forall t u, 
+  W[Γ ||-<lA> t : A | lrA]< wl > × W[Γ ||-< lA > t ≅ u : A | lrA]< wl > -> 
+  W[Γ ||-<lA'> t : A' | lrA']< wl > × W[Γ ||-< lA' > t ≅ u : A' | lrA']< wl >.
+Proof.
+  intros ?? []; split; [eapply WLRTmRedIrrelevant'| eapply WLRTmEqIrrelevant']; tea.
+Qed.  
+  
 Set Printing Primitive Projection Parameters.
 
 Lemma NeNfEqSym {wl Γ k k' A} : [Γ ||-NeNf k ≅ k' : A]< wl > -> [Γ ||-NeNf k' ≅ k : A]< wl >.
@@ -1225,15 +1246,22 @@ Proof.
     1,2: tea.
     2: now symmetry.
     + intros ; eapply DTree_fusion.
-      * now eapply eqTree.
-      * exact (PolyRed.posTree ΠA _ _ _ (SigRedTm.fstRed redL ρ f Hd)).
+      * eapply DTree_fusion.
+        -- now eapply eqTree.
+        -- exact (PolyRed.posTree ΠA _ _ _ (SigRedTm.fstRed redL ρ f Hd)).
+      * eapply (PolyRed.posExtTree ΠA ρ f Hd).
+        -- eapply (SigRedTm.fstRed redL ρ f Hd).
+        -- eapply (SigRedTm.fstRed redR ρ f Hd).
+        -- now eapply eqFst.
     + intros; now eapply ihshp.
     + intros; unshelve eapply ihpos.
       eapply LRTmEqRedConv.
       2: unshelve eapply (eqSnd _ k') ; eauto ; cbn in *.
-      * now eapply PolyRed.posExt.
-      * now eapply over_tree_fusion_r. 
-      * now eapply over_tree_fusion_l. 
+      * eapply PolyRed.posExt.
+        -- eassumption.
+        -- now eapply over_tree_fusion_r. 
+      * now eapply over_tree_fusion_r, over_tree_fusion_l. 
+      * now do 2 (eapply over_tree_fusion_l). 
   - intros ???? [] ???? [????? hprop]; unshelve econstructor; unfold_id_outTy; cbn in *.
     3,4: tea.
     1: now symmetry.

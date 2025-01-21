@@ -88,7 +88,6 @@ Section Reflexivities.
     pattern l, wl, Γ, A, lr; eapply LR_rect_TyUr; clear l wl Γ A lr; intros l wl Γ A.
     - intros h t [? ? ? ? Rt%RedTyRecFwd@{j k h i k}] ; cbn in *.
       (* Need an additional universe level h < i *)
-      Unset Printing Notations.
       pose proof (reflLRTyEq@{h i k j} Rt).
       unshelve econstructor.
       all : cbn.
@@ -112,6 +111,17 @@ Section Reflexivities.
       all: cbn; now eauto.
     - intros; now eapply reflIdRedTmEq.
   Qed.
+
+  Definition WreflLRTmEq@{h i j k l} {l wl Γ A}
+    (lr : WLogRel@{i j k l} l wl Γ A ) :
+    forall t,
+      W[ Γ ||-<l> t : A | lr ]< wl > ->
+      W[ Γ ||-<l> t ≅ t : A | lr ]< wl >.
+  Proof.
+    intros t [WTt WRedt] ; exists (WTt).
+    intros wl' Hover Hover' ; eapply reflLRTmEq@{h i j k l}.
+    now eapply WRedt.
+  Defined.
   
   (* Deprecated *)
   Corollary LRTmEqRefl@{h i j k l} {l wl Γ A eqTy redTm eqTm} (lr : LogRel@{i j k l} l wl Γ A eqTy redTm eqTm) :

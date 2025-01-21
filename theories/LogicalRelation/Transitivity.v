@@ -110,24 +110,22 @@ Proof.
   unshelve epose proof (e := redtmwf_det _ _ (SigRedTm.red redR) (SigRedTm.red redL)); tea.
   1,2: now eauto.
   unshelve eexists ; [exact tL | exact tR |..].
-  - intros ; eapply DTree_fusion ; [eapply DTree_fusion | ].
+  - intros ; do 2 (eapply DTree_fusion).
     + eapply eqtree ; eauto.
     + eapply eqtree' ; eauto.
     + eapply (PolyRed.posTree ΣA ρ f Hd (SigRedTm.fstRed redL ρ f Hd)).
+    + eapply (PolyRed.posExtTree ΣA ρ f Hd (SigRedTm.fstRed redL ρ f Hd) (SigRedTm.fstRed tL ρ f Hd)).
+      eapply LRTmEqSym ; rewrite <- e ; now eapply eqfst.
   - etransitivity; tea. now rewrite e.
   - intros; eapply ihdom ; [eapply eqfst| rewrite e; eapply eqfst'].
   - intros; eapply ihcod; [eapply eqsnd|] ; cbn in *.
     + now do 2 (eapply over_tree_fusion_l).
     + rewrite e. 
-      eapply LRTmEqRedConv.
-      2: eapply eqsnd'.
-      eapply PolyRed.posExt.
-      1: eapply (SigRedTm.fstRed tL).
-      eapply LRTmEqSym. rewrite <- e.
-      eapply eqfst.
-      now eapply over_tree_fusion_r, over_tree_fusion_l.
-      Unshelve.
-      now eapply over_tree_fusion_r.
+      eapply LRTmEqRedConv ; [ unshelve eapply PolyRed.posExt | unshelve eapply eqsnd'].
+      7: eassumption.
+      3: now do 2 (eapply over_tree_fusion_r).
+      * now eapply over_tree_fusion_l, over_tree_fusion_r.
+      * now eapply over_tree_fusion_r, over_tree_fusion_l.
 Qed.
 
 

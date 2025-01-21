@@ -52,9 +52,22 @@ Definition normRedΠ {wl Γ F G l} (h : [Γ ||-<l> tProd F G]< wl >)
   : [Γ ||-<l> tProd F G]< wl > :=
   LRPi' (normRedΠ0 (invLRΠ h)).
 
+Definition WnormRedΠ {wl Γ F G l} (h : W[Γ ||-<l> tProd F G]< wl >)
+  : W[Γ ||-<l> tProd F G]< wl >.
+Proof.
+  exists (WT _ h).
+  intros wl' Hover ; now apply normRedΠ, (WRed _ h).
+Defined.
 
 Definition normRedΣ {wl Γ F G l} (h : [Γ ||-<l> tSig F G]< wl >) : [Γ ||-<l> tSig F G]< wl > :=
   LRSig' (normRedΣ0 (invLRΣ h)).
+
+Definition WnormRedΣ {wl Γ F G l} (h : W[Γ ||-<l> tSig F G]< wl >)
+  : W[Γ ||-<l> tSig F G]< wl >.
+Proof.
+  exists (WT _ h).
+  intros wl' Hover ; now apply normRedΣ, (WRed _ h).
+Defined.
 
 #[program]
 Definition normEqRedΣ {wl Γ F F' G G' l} (h : [Γ ||-<l> tSig F G]< wl >) 
@@ -69,13 +82,20 @@ Solve All Obligations with
   symmetry in e; injection e; clear e; 
   destruct h ; intros; cbn in *; subst; eassumption.
 
+Definition WnormEqRedΣ {wl Γ F F' G G' l} (h : W[Γ ||-<l> tSig F G]< wl >) 
+  (heq : W[Γ ||-<l> _ ≅ tSig F' G' | h]< wl >) : W[Γ ||-<l> _ ≅ tSig F' G' | WnormRedΣ h]< wl >.
+Proof.
+  exists (WTEq _ heq).
+  intros wl' Hover Hover' ; now apply normEqRedΣ, (WRedEq _ heq).
+Defined.
+
 #[program]
 Definition normLambda {wl Γ F F' G t l RΠ} 
   (Rlam : [Γ ||-<l> tLambda F' t : tProd F G | normRedΠ RΠ ]< wl >) :
   [Γ ||-<l> tLambda F' t : tProd F G | normRedΠ RΠ ]< wl > :=
   {| PiRedTm.nf := tLambda F' t |}.
 Obligation 3.
-eapply (PiRedTm.appTree Rlam ρ f Hd ha).
+now eapply (PiRedTm.appTree Rlam ρ f Hd ha).
 Defined.
 Obligation 5.
 pose proof (e := redtmwf_whnf (PiRedTm.red Rlam) whnf_tLambda).
@@ -84,12 +104,22 @@ eapply (f_equal (ren_term ρ)) in e ; cbn in *.
 rewrite e.
 now eapply app.
 Defined.
+Obligation 6.
+now eapply (PiRedTm.eqTree Rlam ρ f Hd ha hb eq).
+Defined.
 Solve All Obligations with
   intros;
   pose proof (e := redtmwf_whnf (PiRedTm.red Rlam) whnf_tLambda);
-  destruct Rlam as [????? app eqq]; cbn in *; subst;
+  destruct Rlam as [?????? app eqq]; cbn in *; subst;
 first [eapply app | now eapply eqq| eassumption].
 
+Definition WnormLambda {wl Γ F F' G t l RΠ} 
+  (Rlam : W[Γ ||-<l> tLambda F' t : tProd F G | WnormRedΠ RΠ ]< wl >) :
+  W[Γ ||-<l> tLambda F' t : tProd F G | WnormRedΠ RΠ ]< wl >.
+Proof.
+  exists (WTTm _ Rlam).
+  intros wl' Hover Hover' ; now apply normLambda, (WRedTm _ Rlam).
+Defined.
 
 #[program]
 Definition normPair {wl Γ F F' G G' f g l RΣ} 
@@ -128,6 +158,14 @@ Next Obligation.
   intros Ho.
   irrelevanceRefl ; unshelve eapply sndRed.
   4,5: eassumption.
+Defined.
+
+Definition WnormPair {wl Γ F F' G G' f g l RΣ} 
+  (Rp : W[Γ ||-<l> tPair F' G' f g : tSig F G | WnormRedΣ RΣ ]< wl >) :
+  W[Γ ||-<l> tPair F' G' f g : tSig F G | WnormRedΣ RΣ ]< wl >.
+Proof.
+  exists (WTTm _ Rp).
+  intros wl' Hover Hover' ; now apply normPair, (WRedTm _ Rp).
 Defined.
 
 Definition invLRcan {wl Γ l A} (lr : [Γ ||-<l> A]< wl >) (w : isType A) : [Γ ||-<l> A]< wl > :=

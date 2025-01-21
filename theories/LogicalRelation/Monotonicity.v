@@ -92,13 +92,15 @@ Defined.
       + now eapply convty_Ltrans.
       + now eapply convty_Ltrans.
       + unshelve econstructor.
-        4,5: destruct polyRed ; now eapply wft_Ltrans.
+        5,6: destruct polyRed ; now eapply wft_Ltrans.
         * intros * f' Hd.
           eapply (PolyRed.shpRed polyRed) ; [eapply wfLCon_le_trans | ] ; eauto.
         * intros ???? f' Hd ha ; cbn in *.
           eapply (PolyRed.posTree polyRed) ; eauto.
         * intros ???? f' ??? Hover ; cbn in *.
           eapply (PolyRed.posRed polyRed) ; eassumption.
+        * intros ???? f' ????? ; cbn in *.
+          eapply (PolyRed.posExtTree polyRed (a := a) (b := b)) ; eassumption.
         * intros ???? f' ????? Hover Hover' ; cbn in *.
           eapply (PolyRed.posExt polyRed) ; eassumption.
     - intros ????? wl' f.
@@ -120,13 +122,15 @@ Defined.
       + now eapply convty_Ltrans.
       + now eapply convty_Ltrans.
       + unshelve econstructor.
-        4,5: destruct polyRed ; now eapply wft_Ltrans.
+        5,6: destruct polyRed ; now eapply wft_Ltrans.
         * intros * f' Hd.
-          eapply (PolyRed.shpRed polyRed) ; [eapply wfLCon_le_trans | ] ; eauto.
+          eapply (PolyRed.shpRed polyRed) ; [eapply wfLCon_le_trans | ] ; eassumption.
         * intros ???? f' Hd ha ; cbn in *.
-          eapply (PolyRed.posTree polyRed) ; eauto.
+          eapply (PolyRed.posTree polyRed) ; eassumption.
         * intros ???? f' ??? Hover ; cbn in *.
           eapply (PolyRed.posRed polyRed) ; eassumption.
+        * intros ???? f' ????? ; cbn in *.
+          eapply (PolyRed.posExtTree polyRed (a := a)) ; eassumption.
         * intros ???? f' ????? Hover Hover' ; cbn in *.
           eapply (PolyRed.posExt polyRed) ; eassumption.
     - intros ????? ih1 ih2 wl' f. 
@@ -222,7 +226,15 @@ Proof.
         exact (IdRedTyEq.rhsRed X).
 Qed.
 
-  Lemma WEq_Ltrans@{h i j k l} {wl Γ wl' A B l}
+Lemma Eq_Ltrans'@{h i j k l} {wl Γ wl' A B l} (f : wl' ≤ε wl) lrA lrA' : 
+    [LogRel@{i j k l} l | Γ ||- A ≅ B | lrA]< wl > ->
+    [LogRel@{i j k l} l | Γ ||- A ≅ B | lrA']< wl' >.
+Proof.
+  intros Heq ; irrelevance0 ; [reflexivity | ].
+  now eapply (Eq_Ltrans f).
+Qed.
+
+Lemma WEq_Ltrans@{h i j k l} {wl Γ wl' A B l}
     (f : wl' ≤ε wl) (lrA : W[Γ ||-<l> A]< wl >) :
     WLogRelEq@{i j k l} l wl Γ A B lrA ->
     WLogRelEq@{i j k l} l wl' Γ A B (WLtrans@{h i j k l} f lrA).
@@ -235,7 +247,15 @@ Qed.
       now eapply over_tree_Ltrans.
   Defined.      
 
-
+  
+Lemma WEq_Ltrans'@{h i j k l} {wl Γ wl' A B l}
+    (f : wl' ≤ε wl) lrA lrA' :
+    WLogRelEq@{i j k l} l wl Γ A B lrA ->
+    WLogRelEq@{i j k l} l wl' Γ A B lrA'.
+Proof.
+  intros Heq ; eapply WLRTyEqIrrelevant' ; [reflexivity | ].
+  now eapply (WEq_Ltrans f).
+Qed.  
 
 Lemma isLRFun_Ltrans : forall wl wl' Γ t A l (f : wl' ≤ε wl) (ΠA : [Γ ||-Π< l > A]< wl >)
                               (ΠA' : [Γ ||-Π< l > A]< wl' >),
@@ -437,7 +457,7 @@ Lemma ΠTm_Ltrans (l : TypeLevel) (wl wl' : wfLCon) (Γ : context) (f : wl' ≤�
     [Γ ||-Π t : A | ΠA ]< wl > ->  [Γ ||-Π t : A | ΠA' ]< wl' >.
 Proof.
   intros t [].
-  unshelve econstructor ; [ | | eapply redtmwf_Ltrans ; eauto |..].
+  unshelve econstructor ; [ | | | eapply redtmwf_Ltrans ; eauto |..].
   1: exact nf.
   1:{ cbn in * ; intros.
       eapply DTree_fusion.
@@ -454,10 +474,26 @@ Proof.
       unshelve epose (Heq := redtywf_det _ _ (redtywf_Ltrans f ΠA.(ParamRedTyPack.red)) ΠA'.(ParamRedTyPack.red)) ; [now econstructor | now econstructor | ].
       now inversion Heq.
   }
-  all: unshelve epose (Heq := redtywf_det _ _ (redtywf_Ltrans f ΠA.(ParamRedTyPack.red)) ΠA'.(ParamRedTyPack.red)) ; [now econstructor | now econstructor | ].
+  1:{ cbn in * ; intros.
+      eapply DTree_fusion.
+      * unshelve eapply (eqTree _ a b).
+        3: now eapply wfLCon_le_trans.
+        2,3: eassumption.
+        all: irrelevance0 ; [ | eassumption ] ; f_equal.
+        all: unshelve epose (Heq := redtywf_det _ _ (redtywf_Ltrans f ΠA.(ParamRedTyPack.red)) ΠA'.(ParamRedTyPack.red)) ;
+          [now econstructor | now econstructor | ].
+        all: now inversion Heq.
+      * eapply (PolyRed.posExtTree ΠA (a:= a) (b := b) ρ (f0 •ε f) Hd).
+        all: irrelevance0 ; [ f_equal | eassumption].
+        all: unshelve epose (Heq := redtywf_det _ _ (redtywf_Ltrans f ΠA.(ParamRedTyPack.red)) ΠA'.(ParamRedTyPack.red)) ;
+          [now econstructor | now econstructor | ].
+        all: now inversion Heq.
+  }
+  all: unshelve epose (Heq := redtywf_det _ _ (redtywf_Ltrans f ΠA.(ParamRedTyPack.red)) ΠA'.(ParamRedTyPack.red)) ;
+    [now econstructor | now econstructor | ].
   all: inversion Heq.
-  2: eapply convtm_Ltrans ; [eauto | now rewrite <- Heq].
-  2: eapply isLRFun_Ltrans ; eauto.
+  2: eapply convtm_Ltrans ; [now eauto | now rewrite <- Heq].
+  2: eapply isLRFun_Ltrans ; now eauto.
   1: now rewrite <- Heq.
   + cbn in * ; intros. 
     irrelevance0 ; [ | unshelve eapply app].
@@ -466,10 +502,11 @@ Proof.
     * now eapply over_tree_fusion_l.
   + cbn in * ; intros.
     irrelevance0 ; [ | unshelve eapply eq].
-    9: now eapply over_tree_fusion_l.
-    2: now eapply over_tree_fusion_r.
-    1: now f_equal.
-    1,2: irrelevance0 ; [ | eassumption] ; now f_equal.
+    11: eapply over_tree_fusion_l ; exact Hoeq.
+    * now f_equal.
+    * now eapply over_tree_fusion_r.
+    * now eapply over_tree_fusion_l.
+    * eapply over_tree_fusion_l ; exact Hob.
 Defined.
 
 Lemma ΣTm_Ltrans (l : TypeLevel) (wl wl' : wfLCon) (Γ : context) (f : wl' ≤ε wl) (A : term)
@@ -581,6 +618,14 @@ Proof.
       * eassumption.
 Qed.
 
+Lemma Tm_Ltrans'@{h i j k l} {wl Γ wl' t A l} (f : wl' ≤ε wl) lrA lrA' : 
+    [LogRel@{i j k l} l | Γ ||- t : A | lrA]< wl > ->
+    [LogRel@{i j k l} l | Γ ||- t : A | lrA']< wl' >.
+Proof.
+  intros Hyp ; irrelevance0 ; [reflexivity | unshelve eapply Tm_Ltrans].
+  2-4: eassumption.
+Qed.
+
 Lemma WTm_Ltrans@{h i j k l} {wl Γ wl' A t l}
     (f : wl' ≤ε wl) (lrA : W[Γ ||-<l> A]< wl >) :
     WLogRelTm@{i j k l} l wl Γ t A lrA ->
@@ -592,7 +637,18 @@ Lemma WTm_Ltrans@{h i j k l} {wl Γ wl' A t l}
     - intros wl'' Hover Hover'.
       eapply (WRedTm _ Ht).
       now eapply over_tree_Ltrans.
-  Defined. 
+  Defined.
+
+  Lemma WTm_Ltrans'@{h i j k l} {wl Γ wl' A t l}
+    (f : wl' ≤ε wl) lrA lrA' :
+    WLogRelTm@{i j k l} l wl Γ t A lrA ->
+    WLogRelTm@{i j k l} l wl' Γ t A lrA'.
+  Proof.
+    intros Ht.
+    eapply WLRTmRedIrrelevant' ; [reflexivity | ].
+    now eapply (WTm_Ltrans f).
+  Qed.
+    
 
 Lemma TmEq_Ltrans@{h i j k l} {wl Γ wl' t u A l} (f : wl' ≤ε wl) (lrA : [Γ ||-<l> A]< wl >) : 
     [LogRel@{i j k l} l | Γ ||- t ≅ u : A | lrA]< wl > ->
@@ -726,6 +782,14 @@ Proof.
       Unshelve. all: assumption.
 Qed.
 
+Lemma TmEq_Ltrans'@{h i j k l} {wl Γ wl' t u A l} (f : wl' ≤ε wl) lrA lrA': 
+    [LogRel@{i j k l} l | Γ ||- t ≅ u : A | lrA]< wl > ->
+    [LogRel@{i j k l} l | Γ ||- t ≅ u : A | lrA']< wl' >.
+Proof.
+  intros Ht ; irrelevance0 ; [reflexivity | ].
+  now eapply (TmEq_Ltrans f).
+Qed.
+
 Lemma WTmEq_Ltrans@{h i j k l} {wl Γ wl' t u A l}
     (f : wl' ≤ε wl) (lrA : W[Γ ||-<l> A]< wl >) :
     WLogRelTmEq@{i j k l} l wl Γ t u A lrA ->
@@ -737,6 +801,58 @@ Lemma WTmEq_Ltrans@{h i j k l} {wl Γ wl' t u A l}
     - intros wl'' Hover Hover'.
       eapply (WRedTmEq _ Htu).
       now eapply over_tree_Ltrans.
-  Defined. 
+  Defined.
 
+  Lemma WTmEq_Ltrans'@{h i j k l} {wl Γ wl' t u A l}
+    (f : wl' ≤ε wl) lrA lrA' :
+    WLogRelTmEq@{i j k l} l wl Γ t u A lrA ->
+    WLogRelTmEq@{i j k l} l wl' Γ t u A lrA'.
+  Proof.
+    intros Ht.
+    eapply WLRTmEqIrrelevant' ; [reflexivity | ].
+    now eapply (WTmEq_Ltrans f).
+  Qed.
+  
 End Red_Ltrans.
+
+Section Injection.
+  Context `{GenericTypingProperties}.
+
+Definition LogtoW@{h i j k l} {l : TypeLevel} {wl Γ A}
+  (RA : [ LogRel@{i j k l} l | Γ ||- A ]< wl >) :
+  WLogRel@{i j k l} l wl Γ A.
+Proof.
+  exists (leaf wl).
+  intros wl' f ; exact (Ltrans@{h i j k l} f RA).
+Defined.
+
+Definition TmLogtoW@{h i j k l} {l : TypeLevel} {wl Γ t A}
+  (RA : [ LogRel@{i j k l} l | Γ ||- A ]< wl >)
+  (Rt : [ LogRel@{i j k l} l | Γ ||- t : A | RA ]< wl >) :
+  WLogRelTm@{i j k l} l wl Γ t A (LogtoW@{h i j k l} RA).
+Proof.
+  exists (leaf wl).
+  intros wl' f f' ; now eapply Tm_Ltrans.
+Defined.
+
+
+Definition EqLogtoW@{h i j k l} {l : TypeLevel} {wl Γ A B}
+  (RA : [ LogRel@{i j k l} l | Γ ||- A ]< wl >)
+  (Rt : [ LogRel@{i j k l} l | Γ ||- A ≅ B | RA ]< wl >) :
+  WLogRelEq@{i j k l} l wl Γ A B (LogtoW@{h i j k l} RA).
+Proof.
+  exists (leaf wl).
+  intros wl' f f' ; now eapply Eq_Ltrans.
+Defined.
+
+
+Definition TmEqLogtoW@{h i j k l} {l : TypeLevel} {wl Γ t u A}
+  (RA : [ LogRel@{i j k l} l | Γ ||- A ]< wl >)
+  (Rt : [ LogRel@{i j k l} l | Γ ||- t ≅ u : A | RA ]< wl >) :
+  WLogRelTmEq@{i j k l} l wl Γ t u A (LogtoW@{h i j k l} RA).
+Proof.
+  exists (leaf wl).
+  intros wl' f f' ; now eapply TmEq_Ltrans.
+Defined.
+  
+End Injection.

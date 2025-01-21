@@ -292,14 +292,24 @@ Module PolyRedPack.
              (ha : [ shpRed ρ f Hd |  Δ ||- a : shp⟨ρ⟩]< k' >),
         forall {k''} (Ho : over_tree k' k'' (posTree ρ f Hd ha)),
           LRPack@{i} k'' Δ (pos[a .: (ρ >> tRel)]) ;
+    posExtTree {Δ a b k'} (ρ : Δ ≤ Γ) :
+      forall (f : k' ≤ε k)
+             (Hd : [ |-[ ta ] Δ ]< k' >)
+             (ha : [ shpRed ρ f Hd |  Δ ||- a : shp⟨ρ⟩]< k' >)
+             (hb : [ shpRed ρ f Hd |  Δ ||- b : shp⟨ρ⟩]< k' >)
+             (heq : [ shpRed ρ f Hd | Δ ||- a ≅ b : shp⟨ρ⟩ ]< k' >),
+        DTree k' ;
     posExt {Δ a b k'} (ρ : Δ ≤ Γ) :
       forall (f : k' ≤ε k)
              (Hd : [ |-[ ta ] Δ ]< k' >)
              (ha : [ shpRed ρ f Hd |  Δ ||- a : shp⟨ρ⟩]< k' >)
              (hb : [ shpRed ρ f Hd |  Δ ||- b : shp⟨ρ⟩]< k' >)
              (heq : [ shpRed ρ f Hd | Δ ||- a ≅ b : shp⟨ρ⟩ ]< k' >),
-      forall {k''} (Ho : over_tree k' k'' (posTree ρ f Hd ha)),
-        [ (posRed ρ f Hd ha Ho) | Δ ||- (pos[a .: (ρ >> tRel)]) ≅ (pos[b .: (ρ >> tRel)]) ]< k'' > ;
+      forall {k''}
+             (Hoa : over_tree k' k'' (posTree ρ f Hd ha))
+             (Hob : over_tree k' k'' (posTree ρ f Hd hb))
+             (Hoeq : over_tree k' k'' (posExtTree ρ f Hd ha hb heq)),
+        [ (posRed ρ f Hd ha Hoa) | Δ ||- (pos[a .: (ρ >> tRel)]) ≅ (pos[b .: (ρ >> tRel)]) ]< k'' > ;
       }.
 
   Arguments PolyRedPack {_ _ _ _}.
@@ -439,15 +449,15 @@ Inductive isLRFun `{ta : tag} `{WfContext ta}
     (funTree : forall {Δ k'} {a} (ρ : Δ ≤ Γ) (f : k' ≤ε k)
                       (Hd : [ |-[ ta ] Δ ]< k' >)
                       (ha : [ ΠA.(PolyRedPack.shpRed) ρ f Hd | Δ ||- a : ΠA.(PiRedTy.dom)⟨ρ⟩]< k' >),
-        DTree k'),
-    (forall {Δ k'} (ρ : Δ ≤ Γ) (f : k' ≤ε k) (h : [ |- Δ ]< k' >)
-            (domRed:= ΠA.(PolyRedPack.shpRed) ρ f h),
-        [domRed | Δ ||- (PiRedTy.dom ΠA)⟨ρ⟩ ≅ A'⟨ρ⟩]< k' >) ->
-    (forall {Δ k' a} (ρ : Δ ≤ Γ) (f : k' ≤ε k) (h : [ |- Δ ]< k' >)
-            (ha : [ ΠA.(PolyRedPack.shpRed) ρ f h | Δ ||- a : ΠA.(PiRedTy.dom)⟨ρ⟩ ]< k' >),
+        DTree k')
+    (HeqA : forall {Δ k'} (ρ : Δ ≤ Γ) (f : k' ≤ε k) (h : [ |- Δ ]< k' >)
+                   (domRed:= ΠA.(PolyRedPack.shpRed) ρ f h),
+        [domRed | Δ ||- (PiRedTy.dom ΠA)⟨ρ⟩ ≅ A'⟨ρ⟩]< k' >)
+    (Hred: forall {Δ k' a} (ρ : Δ ≤ Γ) (f : k' ≤ε k) (h : [ |- Δ ]< k' >)
+                  (ha : [ ΠA.(PolyRedPack.shpRed) ρ f h | Δ ||- a : ΠA.(PiRedTy.dom)⟨ρ⟩ ]< k' >),
       forall {k''} (Ho : over_tree k' k'' (ΠA.(PolyRedPack.posTree) ρ f h ha))
              (Ho' : over_tree k' k'' (funTree ρ f h ha)),
-        [ΠA.(PolyRedPack.posRed) ρ f h ha Ho | Δ ||- t[a .: (ρ >> tRel)] : ΠA.(PiRedTy.cod)[a .: (ρ >> tRel)]]< k'' >) ->
+        [ΠA.(PolyRedPack.posRed) ρ f h ha Ho | Δ ||- t[a .: (ρ >> tRel)] : ΠA.(PiRedTy.cod)[a .: (ρ >> tRel)]]< k'' >),
     isLRFun ΠA (tLambda A' t)
 | NeLRFun : forall f : term, [Γ |- f ~ f : tProd (PiRedTy.dom ΠA) (PiRedTy.cod ΠA)]< k > -> isLRFun ΠA f.
 
@@ -474,14 +484,23 @@ Module PiRedTm.
       forall {k''} (Ho : over_tree k' k'' (ΠA.(PolyRedPack.posTree) ρ f Hd ha))
              (Ho' : over_tree k' k'' (appTree ρ f Hd ha)),
         [ ΠA.(PolyRedPack.posRed) ρ f Hd ha Ho | Δ ||- tApp nf⟨ρ⟩ a : ΠA.(PiRedTy.cod)[a .: (ρ >> tRel)]]< k'' > ;
+    eqTree {Δ a b k'} (ρ : Δ ≤ Γ) :
+      forall (f : k' ≤ε k) (Hd : [ |-[ ta ] Δ ]< k' >)
+             (ha : [ ΠA.(PolyRedPack.shpRed) ρ f Hd |  Δ ||- a : ΠA.(PiRedTy.dom)⟨ρ⟩]< k' >)
+             (hb : [ ΠA.(PolyRedPack.shpRed) ρ f Hd |  Δ ||- b : ΠA.(PiRedTy.dom)⟨ρ⟩]< k' >)
+             (eq : [ ΠA.(PolyRedPack.shpRed) ρ f Hd | Δ ||- a ≅ b : ΠA.(PiRedTy.dom)⟨ρ⟩ ]< k' >),
+        DTree k' ;
     eq {Δ a b k'} (ρ : Δ ≤ Γ) :
-        forall (f : k' ≤ε k) (Hd : [ |-[ ta ] Δ ]< k' >)
-               (ha : [ ΠA.(PolyRedPack.shpRed) ρ f Hd |  Δ ||- a : ΠA.(PiRedTy.dom)⟨ρ⟩]< k' >)
-               (hb : [ ΠA.(PolyRedPack.shpRed) ρ f Hd |  Δ ||- b : ΠA.(PiRedTy.dom)⟨ρ⟩]< k' >)
-               (eq : [ ΠA.(PolyRedPack.shpRed) ρ f Hd | Δ ||- a ≅ b : ΠA.(PiRedTy.dom)⟨ρ⟩ ]< k' >),
-        forall {k''} (Ho : over_tree k' k'' (ΠA.(PolyRedPack.posTree) ρ f Hd ha))
-               (Ho' : over_tree k' k'' (appTree ρ f Hd ha)),
-          [ ΠA.(PolyRedPack.posRed) ρ f Hd ha Ho | Δ ||- tApp nf⟨ρ⟩ a ≅ tApp nf⟨ρ⟩ b : ΠA.(PiRedTy.cod)[a .: (ρ >> tRel)] ]< k'' > ;
+      forall (f : k' ≤ε k) (Hd : [ |-[ ta ] Δ ]< k' >)
+             (ha : [ ΠA.(PolyRedPack.shpRed) ρ f Hd |  Δ ||- a : ΠA.(PiRedTy.dom)⟨ρ⟩]< k' >)
+             (hb : [ ΠA.(PolyRedPack.shpRed) ρ f Hd |  Δ ||- b : ΠA.(PiRedTy.dom)⟨ρ⟩]< k' >)
+             (eq : [ ΠA.(PolyRedPack.shpRed) ρ f Hd | Δ ||- a ≅ b : ΠA.(PiRedTy.dom)⟨ρ⟩ ]< k' >),
+      forall {k''}
+             (HoPi : over_tree k' k'' (ΠA.(PolyRedPack.posTree) ρ f Hd ha))
+             (Hoa : over_tree k' k'' (appTree ρ f Hd ha))
+             (Hob : over_tree k' k'' (appTree ρ f Hd hb))
+             (Hoeq : over_tree k' k'' (eqTree ρ f Hd ha hb eq)),
+        [ ΠA.(PolyRedPack.posRed) ρ f Hd ha HoPi | Δ ||- tApp nf⟨ρ⟩ a ≅ tApp nf⟨ρ⟩ b : ΠA.(PiRedTy.cod)[a .: (ρ >> tRel)] ]< k'' > ;
     }.
       
   Arguments PiRedTm {_ _ _ _ _ _ _ _ _}.
@@ -1455,15 +1474,25 @@ Section PolyRed.
                 (ha : [ shpRed ρ f Hd |  Δ ||- a : shp⟨ρ⟩]< k' >),
          forall {k''} (Ho : over_tree k' k'' (posTree ρ f Hd ha)),
            [ LogRel@{i j k l} l | Δ ||- pos[a .: (ρ >> tRel)]]< k'' > ;
+      posExtTree {Δ k' a b}
+        (ρ : Δ ≤ Γ) (f : k' ≤ε k)
+        (Hd :  [ |- Δ ]< k' >)
+        (ha : [ (shpRed ρ f Hd) | Δ ||- a : shp⟨ρ⟩ ]< k' >)
+        (hb : [ (shpRed ρ f Hd) | Δ ||- b : shp⟨ρ⟩]< k' >)
+        (hab : [ (shpRed ρ f Hd) | Δ ||- a ≅ b : shp⟨ρ⟩]< k' >) :
+      DTree k' ;
       posExt
         {Δ k' a b}
         (ρ : Δ ≤ Γ) (f : k' ≤ε k)
         (Hd :  [ |- Δ ]< k' >)
-        (ha : [ (shpRed ρ f Hd) | Δ ||- a : shp⟨ρ⟩ ]< k' >) :
-        [ (shpRed ρ f Hd) | Δ ||- b : shp⟨ρ⟩]< k' > ->
-        [ (shpRed ρ f Hd) | Δ ||- a ≅ b : shp⟨ρ⟩]< k' > ->
-        forall {k''} (Ho : over_tree k' k'' (posTree ρ f Hd ha)),
-        [ (posRed ρ f Hd ha Ho) | Δ ||- (pos[a .: (ρ >> tRel)]) ≅ (pos[b .: (ρ >> tRel)]) ]< k'' > ;
+        (ha : [ (shpRed ρ f Hd) | Δ ||- a : shp⟨ρ⟩ ]< k' >)
+        (hb : [ (shpRed ρ f Hd) | Δ ||- b : shp⟨ρ⟩]< k' >)
+        (hab : [ (shpRed ρ f Hd) | Δ ||- a ≅ b : shp⟨ρ⟩]< k' >) :
+      forall {k''}
+             (Hoa : over_tree k' k'' (posTree ρ f Hd ha))
+             (Hob : over_tree k' k'' (posTree ρ f Hd hb))
+             (Hoeq : over_tree k' k'' (posExtTree ρ f Hd ha hb hab)),
+        [ (posRed ρ f Hd ha Hoa) | Δ ||- (pos[a .: (ρ >> tRel)]) ≅ (pos[b .: (ρ >> tRel)]) ]< k'' > ;
     }.
   
   Definition from@{i j k l} {PA : PolyRedPack@{k} k Γ shp pos} 
@@ -1474,6 +1503,7 @@ Section PolyRed.
     - econstructor ; unshelve eapply PolyRedPack.shpAd. 4: eassumption. all: eauto.
     - eapply PolyRedPack.posTree ; eauto.
     - econstructor. unshelve eapply PolyRedPack.posAd. 8: exact Ho. tea.
+    - eapply (PolyRedPack.posExtTree PA (a := a) (b := b)) ; eassumption.
     - now eapply PolyRedPack.shpTy.
     - now eapply PolyRedPack.posTy.
     - now eapply PolyRedPack.posExt.
@@ -1485,6 +1515,7 @@ Section PolyRed.
     - now eapply shpRed.
     - intros ; now eapply posTree.
     - intros; now eapply posRed.
+    - intros ; now eapply (posExtTree PA (a := a) (b := b)).
     - now eapply shpTy. 
     - now eapply posTy.
     - intros; now eapply posExt.

@@ -121,10 +121,16 @@ Proof.
     assert [Γ |-[ ta ] t ⤳* u : ΠA.(outTy)]< wl > by now eapply redtm_conv. 
     assert [Γ |-[ ta ] t : ΠA.(outTy)]< wl > by (eapply ty_conv; gen_typing).
     unshelve refine (let rt : [LRPi' ΠA | Γ ||- t : A]< wl > := _ in _).
-    1: exists f appTree ; tea ; constructor ; destruct red ; tea ; etransitivity ; tea.
-    split; tea; unshelve eexists ; tea.
-    intros; cbn. eapply eq; tea.
-    now apply reflLRTmEq.
+    1: eexists f _ _ ; tea ; constructor ; destruct red ; tea ; etransitivity ; tea.
+    split; tea; unshelve eexists.
+    1,2,4: tea.
+    2:{ intros; cbn in *. eapply eq.
+        1,2: eapply over_tree_fusion_l ; exact Ho'.
+        cbn in *.
+        eapply over_tree_fusion_r ; exact Ho'.
+        Unshelve.
+        now apply reflLRTmEq.
+    }
   - intros ? NA t ? Ru red; inversion Ru; subst.
     assert [Γ |- A ≅ tNat]< wl > by (destruct NA; gen_typing).
     assert [Γ |- t :⤳*: nf : tNat]< wl >. 1:{

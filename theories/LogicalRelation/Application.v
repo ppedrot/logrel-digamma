@@ -158,7 +158,7 @@ Proof.
   set (h := invLRΠ _) in hΠ.
   epose proof (e := redtywf_whnf (PiRedTyPack.red h) whnf_tProd); 
   symmetry in e; injection e; clear e; 
-  destruct h as [?????? [?? domRed ? codRed codExt]] ; clear RΠ Rtt'; 
+  destruct h as [?????? [?? domRed ? codRed codExtTree codExt]] ; clear RΠ Rtt'; 
   intros; cbn in *; subst. 
   assert (wfΓ : [|-Γ]< wl >) by gen_typing.
   assert [Γ ||-<l> u' : F⟨@wk_id Γ⟩ | domRed _ _ (@wk_id Γ) (idε _) wfΓ]< wl > by irrelevance.
@@ -175,18 +175,22 @@ Proof.
   1:{
     replace G[u..] with G[u .: @wk_id Γ >> tRel] by now bsimpl.
     unshelve eapply WLRTyEqIrrelevant'.
-    5: exists (posTree _ _ u' (@wk_id Γ) (idε _) wfΓ X) ; intros wl' f Hover.
-    5: irrelevance0 ; [ reflexivity | ].
-    5: unshelve eapply codExt.
-    11: eapply LRTmEqSym; irrelevance.
-    4-8: tea.
+    5:{ unshelve eexists ; [eapply DTree_fusion ; [eapply DTree_fusion | ] | ].
+        + exact (posTree _ _ u' (@wk_id Γ) (idε _) wfΓ X).
+        + exact (posTree _ _ u (@wk_id Γ) (idε _) wfΓ X0).
+        + eapply (codExtTree Γ wl u' u wk_id ((idε) wl) wfΓ) ; eauto.
+          now eapply LRTmEqSym; irrelevance.
+        + intros.
+          irrelevance0 ; [reflexivity | unshelve eapply codExt].
+          9: eapply over_tree_fusion_r, over_tree_fusion_l ; eassumption.
+          2: do 2 (eapply over_tree_fusion_l) ; eassumption.
+          1: now eapply LRTmEqSym; irrelevance.
+          eapply over_tree_fusion_r ; exact Hover'.
+    }
     3: now bsimpl.
     2: now replace G[u' .: @wk_id Γ >> tRel] with G[u'..] by now bsimpl.
   }
-  pose (fez:= (snd (appTerm0 hΠ Rt Ru RGu))).
-  pose (zef := (snd (appTerm0 hΠ Rt' Ru' RGu'))).
   unshelve epose  proof (eqApp _ u _ (@wk_id Γ) (idε _) wfΓ _).  1: irrelevance.
-  cbn in *.
   eapply WtransEqTerm; eapply WtransEqTerm.
   - unshelve eapply (snd (appTerm0 hΠ Rt Ru RGu)).
   - unshelve epose  proof (eqApp _ u _ (@wk_id Γ) (idε _) wfΓ _).  1: irrelevance.
@@ -201,8 +205,10 @@ Proof.
     5: unshelve eapply Hyp.
     4: now bsimpl.
     1,2,5: irrelevance.
-    2: eapply over_tree_fusion_l ; exact Hover'. 
-    eapply over_tree_fusion_r ; exact Hover'.
+    2: do 2 (eapply over_tree_fusion_l) ; exact Hover'. 
+    + eapply over_tree_fusion_r, over_tree_fusion_l ; exact Hover'.
+    + eapply over_tree_fusion_l, over_tree_fusion_r ; exact Hover'.
+    + do 2 (eapply over_tree_fusion_r) ; exact Hover'.
   - replace (_)⟨_⟩ with (PiRedTm.nf Rt') by now bsimpl.
     eapply WLRTmEqRedConv; tea.
     eapply WLRTmEqSym.

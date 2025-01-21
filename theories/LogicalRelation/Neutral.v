@@ -234,7 +234,11 @@ intros l wl Γ A ΠA0 ihdom ihcod; split.
                        [Γ |- n ~ n : A]< wl > ->
                        [Γ ||-Π n : A | ΠA]< wl > := _ in _).
   {
-    intros. exists n (fun _ _ _ _ _ _ _ => leaf _) ; cbn.
+    intros. unshelve eexists n (fun _ _ _ _ _ _ _ => leaf _) _ ; cbn.
+    - intros * ha hb hab.
+      eapply DTree_fusion.
+      + exact (PolyRed.posTree polyRed ρ f Hd hb).
+      + exact (PolyRed.posExtTree polyRed ρ f Hd ha hb hab).
     - eapply redtmwf_refl.
       gen_typing.
     - eauto.
@@ -280,7 +284,9 @@ intros l wl Γ A ΠA0 ihdom ihcod; split.
         2: eapply Happ ; tea.
         5:{ symmetry.
             unshelve eapply escapeEq, PolyRed.posExt.
-            8: eassumption. all: eassumption.
+            8: eassumption. all: try eassumption.
+            + now eapply over_tree_fusion_l.
+            + now eapply over_tree_fusion_r.
         }
         * now eapply wfLCon_le_trans.
         * now eapply wfc_Ltrans.
@@ -415,10 +421,17 @@ Proof.
       1: unshelve eapply convtm_over_tree.
       2: intros ; eapply escapeEqTerm, (ihcod _ _ (tFst n) wk_id).
       Unshelve.
-      1: unshelve eapply ((PolyRed.posTree polyRed wk_id (wfLCon_le_id _))).
-      2: now gen_typing.
-      11: exact H21.
-      5: rewrite <- (wk_id_ren_on Γ n) ; now eapply hfst.
+      1:{ eapply DTree_fusion ; [eapply DTree_fusion | ].
+          1,2: unshelve eapply ((PolyRed.posTree polyRed wk_id (wfLCon_le_id _))).
+          2,4: now gen_typing.
+          3: eapply (hfst n) ; eassumption.
+          2: eapply (hfst n') ; eassumption.
+          eapply (PolyRed.posExtTree polyRed wk_id ((idε) wl) (wfc_wft H12)).
+          + eapply (hfst n) ; eassumption.
+          + eapply (hfst n') ; eassumption.
+          + now eapply hconv_fst.
+      }
+      8: rewrite <- (wk_id_ren_on Γ n) ; now eapply hfst.
       1,2,3: pose proof (Hyp := over_tree_le H21).
       + eapply typing_meta_conv.
         eapply ty_snd, ty_conv ; [now eapply ty_Ltrans | ].
@@ -436,13 +449,20 @@ Proof.
         now eapply wfLCon_le_id.
         now gen_typing.
         2: now eapply hconv_fst.
-        revert H21 ; now destruct (wk_id_ren_on Γ n).
+        * do 2 (eapply over_tree_fusion_l) ; exact H21.
+        * eapply over_tree_fusion_r, over_tree_fusion_l ; exact H21.
+        * now eapply over_tree_fusion_r.
       + eapply convneu_Ltrans ; [eassumption | ].
         eapply convne_meta_conv.
         1:now eapply convneu_snd, convneu_conv.
         1: now bsimpl.
         easy.
       + now bsimpl.
+      + now eapply wfLCon_le_id.
+      + now gen_typing.
+      + assert (Hyp := over_tree_fusion_l (over_tree_fusion_l H21)) ; clear H21 ; revert Hyp.
+        generalize (hfst n Γ wl wk_id ((idε) wl) (wfc_wft H12) H16 H18).
+        now destruct (wk_id_ren_on _ n).
   }
   split.
   unshelve refine ( let funred : forall n,
@@ -492,12 +512,15 @@ Proof.
       [Δ |- cod[tFst n⟨ρ⟩ .: ρ >> tRel] ≅ cod[tFst n'⟨ρ⟩ .: ρ >> tRel]]< wl' >).
     { intros ; eapply convty_over_tree.
       intros wl'' Ho ; eapply escapeEq; unshelve eapply (PolyRed.posExt ΣA).
-      2,3,5: eassumption.
+      2,3: eassumption.
       + eapply Rn.
+      + do 2 (eapply over_tree_fusion_l) ; exact Ho.
       + eapply Rn'.
       + eapply hconv_fst.
         1,2: now eapply ty_Ltrans.
         now eapply convneu_Ltrans.
+      + eapply over_tree_fusion_r, over_tree_fusion_l ; exact Ho. 
+      + eapply over_tree_fusion_r ; exact Ho.
     }
     split; tea; unshelve eexists Rn Rn' _.
     + intros ; now eapply leaf.
