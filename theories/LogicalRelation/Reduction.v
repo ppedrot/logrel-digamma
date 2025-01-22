@@ -1,7 +1,7 @@
 (* From Coq.Classes Require Import CRelationClasses. *)
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
 From LogRel Require Import Notations Utils BasicAst LContexts Context NormalForms UntypedReduction Weakening GenericTyping Monad LogicalRelation DeclarativeInstance.
-From LogRel.LogicalRelation Require Import Induction Reflexivity Universe Escape Irrelevance.
+From LogRel.LogicalRelation Require Import Induction Reflexivity Universe Escape Irrelevance Monotonicity.
 
 Set Universe Polymorphism.
 
@@ -358,6 +358,24 @@ Proof.
   - econstructor.
     + now eapply ty_Ltrans.
     + now eapply redtm_Ltrans.
-Qed.  
+Qed.
 
+Lemma redTmFwdConv {wl Γ l A t u} {RA : [Γ ||-<l> A]< wl >} : 
+  [Γ ||-<l> t : A | RA]< wl > -> [Γ |- t :⤳*: u : A]< wl > -> whnf u -> [Γ ||-<l> u : A | RA]< wl > × [Γ ||-<l> t ≅ u : A | RA]< wl >.
+Proof.
+  intros Rt red wh. pose (Ru := redTmFwd Rt red wh).
+  destruct (redwfSubstTerm RA Ru red); now split.
+Qed.
+
+Lemma WredTmFwdConv {wl Γ l A t u} {RA : W[Γ ||-<l> A]< wl >} : 
+  W[Γ ||-<l> t : A | RA]< wl > -> [Γ |- t :⤳*: u : A]< wl > -> whnf u -> W[Γ ||-<l> u : A | RA]< wl > × W[Γ ||-<l> t ≅ u : A | RA]< wl >.
+Proof.
+  intros [d Ht] red wh ; split ; exists d.
+  all:  intros wl' Hover Hover'.
+  all: eapply redTmFwdConv ; [ | | eassumption].
+  1,3: now unshelve eapply Ht.
+  all: eapply redtmwf_Ltrans ; [ | eassumption].
+  all: now eapply over_tree_le.
+Qed.
+      
 End Reduction.
