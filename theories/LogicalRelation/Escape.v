@@ -295,3 +295,23 @@ Ltac escape :=
     try pose proof (X := escapeEqTerm RA H) ;
     block H
   end; unblock.
+
+Ltac Wescape :=
+  repeat lazymatch goal with
+  | [H : W[_ ||-< _ > _]< _ > |- _] => 
+    let X := fresh "Esc" H in
+    try pose proof (X := Wescape H) ;
+    block H
+  | [H : W[_ ||-<_> _ ≅ _ | ?RA ]< _ > |- _] =>
+    let X := fresh "Esc" H in
+    try pose proof (X := WescapeEq RA H) ;
+    block H
+  | [H : W[_ ||-<_> _ : _ | ?RA]< _ > |- _] =>
+    let X := fresh "R" H in
+    try pose proof (X := WescapeTerm RA H) ;
+    block H
+  | [H : W[_ ||-<_> _ ≅ _ : _ | ?RA]< _ > |- _] =>
+    let X := fresh "R" H in
+    try pose proof (X := WescapeEqTerm RA H) ;
+    block H
+  end; unblock.

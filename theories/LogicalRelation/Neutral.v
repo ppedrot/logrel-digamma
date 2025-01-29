@@ -633,6 +633,27 @@ Proof.
   intros; now eapply completeness.
 Qed.
 
+Lemma WneuTerm {l wl Γ A} (RA : W[Γ ||-<l> A]< wl >) {n} :
+  [Γ |- n : A]< wl > ->
+  [Γ |- n ~ n : A]< wl > ->
+  W[Γ ||-<l> n : A | RA]< wl >.
+Proof.
+  intros ; unshelve econstructor ; [now econstructor | intros].
+  eapply neuTerm ; [now eapply ty_Ltrans | ].
+  now eapply convneu_Ltrans.
+Qed.
+
+Lemma WneuTermEq {l wl Γ A} (RA : W[Γ ||-<l> A]< wl >) {n n'} :
+  [Γ |- n : A]< wl > ->
+  [Γ |- n' : A]< wl > ->
+  [Γ |- n ~ n' : A]< wl > ->
+  W[Γ ||-<l> n ≅ n' : A| RA]< wl >.
+Proof.
+  intros ; unshelve econstructor ; [now econstructor | intros].
+  eapply neuTermEq ; [ | | now eapply convneu_Ltrans ].
+  all: now eapply ty_Ltrans.
+Qed.
+
 Lemma var0conv {l wl Γ A A'} (RA : [Γ ,, A ||-<l> A']< wl >) :
   [Γ,, A |- A⟨↑⟩ ≅ A']< wl > ->
   [Γ |- A]< wl > ->
@@ -653,4 +674,13 @@ Proof.
   eapply reflLRTyEq.
 Qed.
 
+Lemma Wvar0 {l wl Γ A A'} (RA : W[Γ ,, A ||-<l> A']< wl >) :
+  A⟨↑⟩ = A' ->
+  [Γ |- A]< wl > ->
+  W[Γ ,, A ||-<l> tRel 0 : A' | RA]< wl >.
+Proof.
+  intros eq HA ; unshelve econstructor ; [now econstructor | ].
+  intros wl' Hover Hover' ; eapply var0 ; [eassumption | ].
+  now eapply wft_Ltrans ; [eapply over_tree_le | ].
+Qed.
 End Neutral.

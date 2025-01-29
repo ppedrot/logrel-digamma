@@ -1376,7 +1376,7 @@ Section MoreDefs.
     : [LogRel@{i j k l} l | Γ ||- A]< k > :=
     LRbuild (LRId (LogRelRec l) IA IAad).
 
-    Record WLogRel@{i j k l} (l : TypeLevel) wl Γ A :=
+  Record WLogRel@{i j k l} (l : TypeLevel) wl Γ A :=
     { WT : DTree wl  ;
       WRed {wl'} (Ho : over_tree wl wl' WT) :
       [ LogRel@{i j k l} l | Γ ||- A ]< wl' > ;

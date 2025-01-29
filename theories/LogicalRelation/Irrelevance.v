@@ -1311,3 +1311,13 @@ Ltac irrelevance0 :=
 Ltac irrelevance := irrelevance0 ; [|eassumption] ; try first [reflexivity| now bsimpl].
 
 Ltac irrelevanceRefl := irrelevance0 ; [reflexivity|].
+
+Ltac Wirrelevance0 :=
+  lazymatch goal with
+  | [|- W[_ ||-<_> _ ≅ _ | _ ]< _ > ] => eapply WLRTyEqIrrelevant'
+  | [|- W[_ ||-<_> _ : _ | _ ]< _ > ] => eapply WLRTmRedIrrelevant'
+  | [|- W[_ ||-<_> _ ≅ _ : _ | _ ]< _ > ] => eapply WLRTmEqIrrelevant'
+  | [|- W[_ ||-<_> _ : _ | _]< _ > × [_ ||-<_> _≅ _ : _ | _]< _ >] => eapply WLRTmTmEqIrrelevant'
+  end.
+
+Ltac Wirrelevance := Wirrelevance0 ; [|eassumption] ; try first [reflexivity| now bsimpl].

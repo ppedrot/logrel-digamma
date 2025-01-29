@@ -316,7 +316,7 @@ Proof.
   pose proof (IdRedTy_inv (invLRId RIAxy)) as [eA ex ey].
   pose proof (hred := Re.(IdRedTm.red)); unfold_id_outTy; rewrite <-eA,<-ex,<-ey in hred.
   eapply redSubstTerm.
-  - About redTmFwd. pose proof (redTmFwdConv Re hred (IdProp_whnf _ _ (IdRedTm.prop Re))) as [Rnf Rnfeq].
+  - pose proof (redTmFwdConv Re hred (IdProp_whnf _ _ (IdRedTm.prop Re))) as [Rnf Rnfeq].
     eapply LRTmRedConv.
     2: eapply idElimPropRed; tea; exact (IdRedTm.prop Re).
     unshelve eapply LRTyEqSym.

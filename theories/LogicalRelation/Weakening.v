@@ -545,5 +545,17 @@ Lemma wkEq@{i j k l} {wl Γ Δ A B l} (ρ : Δ ≤ Γ) (wfΔ : [|-Δ]< wl >) (lr
       all: eapply (IA.(IdRedTy.tyKripkeTmEq) _ _ _ (idε _) (idε _)); [now rewrite wk_comp_runit| irrelevance].
       Unshelve. all: tea.
   Qed.
+
+  Lemma WwkTermEq {wl Γ Δ t u A l} (ρ : Δ ≤ Γ) (wfΔ : [|-Δ]< wl >) (lrA : W[Γ ||-<l> A]< wl >) : 
+    W[Γ ||-<l> t ≅ u : A | lrA]< wl > -> W[Δ ||-<l> t⟨ρ⟩ ≅ u⟨ρ⟩: A⟨ρ⟩ | Wwk ρ wfΔ lrA]< wl >.
+  Proof.
+    intros [].
+    exists WTTmEq.
+    intros.
+    eapply wkTermEq.
+    now eapply WRedTmEq.
+  Qed.
+    
+  
 End Weakenings.
 
