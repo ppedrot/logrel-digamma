@@ -1,5 +1,5 @@
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
-From LogRel Require Import Utils BasicAst Notations Context NormalForms Weakening GenericTyping LogicalRelation DeclarativeInstance Validity.
+From LogRel Require Import Utils BasicAst Notations LContexts Context NormalForms Weakening GenericTyping LogicalRelation Validity.
 From LogRel.LogicalRelation Require Import Irrelevance Escape Reflexivity Weakening Neutral Reduction Transitivity.
 
 Set Universe Polymorphism.
@@ -9,14 +9,14 @@ Context `{GenericTypingProperties}.
 
 Set Printing Primitive Projection Parameters.
 
-Lemma redwfSubstValid {Γ A t u l}
-  (VΓ : [||-v Γ])
-  (red : [Γ ||-v t :⇒*: u : A | VΓ])
-  (VA : [Γ ||-v<l> A | VΓ])
-  (Vu : [Γ ||-v<l> u : A | VΓ | VA]) :
-  [Γ ||-v<l> t : A | VΓ | VA] × [Γ ||-v<l> t ≅ u : A | VΓ | VA].
+Lemma redwfSubstValid {wl Γ A t u l}
+  (VΓ : [||-v Γ]< wl >)
+  (red : [Γ ||-v t :⤳*: u : A | VΓ]< wl >)
+  (VA : [Γ ||-v<l> A | VΓ]< wl >)
+  (Vu : [Γ ||-v<l> u : A | VΓ | VA]< wl >) :
+  [Γ ||-v<l> t : A | VΓ | VA]< wl > × [Γ ||-v<l> t ≅ u : A | VΓ | VA]< wl >.
 Proof.
-  assert (Veq : [Γ ||-v<l> t ≅ u : A | VΓ | VA]).
+  assert (Veq : [Γ ||-v<l> t ≅ u : A | VΓ | VA]< wl >).
   {
     constructor; intros; eapply redwfSubstTerm.
     1: now eapply validTm.

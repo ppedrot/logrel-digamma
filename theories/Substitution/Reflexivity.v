@@ -1,5 +1,5 @@
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
-From LogRel Require Import Utils BasicAst Notations Context NormalForms Weakening GenericTyping LogicalRelation DeclarativeInstance Validity.
+From LogRel Require Import Utils BasicAst Notations LContexts Context NormalForms Weakening GenericTyping LogicalRelation Validity.
 From LogRel.LogicalRelation Require Import Irrelevance Escape Reflexivity Weakening Neutral.
 
 Set Universe Polymorphism.
@@ -7,19 +7,19 @@ Set Universe Polymorphism.
 Section Reflexivity.
 Context `{GenericTypingProperties}.
 
-Lemma reflValidTy {Γ A l} (VΓ : [||-v Γ])
-  (VA : [Γ ||-v<l> A | VΓ]) :
-  [Γ ||-v<l> A ≅ A | VΓ | VA].
+Lemma reflValidTy {wl Γ A l} (VΓ : [||-v Γ]< wl >)
+  (VA : [Γ ||-v<l> A | VΓ]< wl >) :
+  [Γ ||-v<l> A ≅ A | VΓ | VA]< wl >.
 Proof.
-  constructor; intros; apply LRTyEqRefl_.
+  constructor; intros; apply reflLRTyEq.
 Qed.
 
-Lemma reflValidTm {Γ t A l} (VΓ : [||-v Γ])
-  (VA : [Γ ||-v<l> A | VΓ])
-  (Vt : [Γ ||-v<l> t : A | VΓ | VA]) :
-  [Γ ||-v<l> t ≅ t : A | VΓ | VA].
+Lemma reflValidTm {wl Γ t A l} (VΓ : [||-v Γ]< wl >)
+  (VA : [Γ ||-v<l> A | VΓ]< wl >)
+  (Vt : [Γ ||-v<l> t : A | VΓ | VA]< wl >) :
+  [Γ ||-v<l> t ≅ t : A | VΓ | VA]< wl >.
 Proof.
-  constructor; intros; apply LREqTermRefl_; now eapply validTm.
+  constructor; intros; apply reflLRTmEq; now eapply validTm.
 Qed.
 
 End Reflexivity.

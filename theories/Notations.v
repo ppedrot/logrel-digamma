@@ -269,13 +269,13 @@ Reserved Notation "[ Γ ||-Id< l > t ≅ u : A | RA ]< p >" (at level 0, Γ, p, 
 
 (** ** Validity notations *)
 Reserved Notation "[||-v Γ ]< wl >" (at level 0, wl, Γ at level 50).
-Reserved Notation "[ Δ ||-v σ : Γ | VΓ | wfΔ ]< wl >" (at level 0, Δ, σ, wl, Γ, VΓ, wfΔ at level 50).
-Reserved Notation "[ Δ ||-v σ ≅ σ' : Γ | VΓ | wfΔ | vσ ]< wl >" (at level 0, Δ, σ, σ', wl, Γ, VΓ, wfΔ, vσ at level 50).
+Reserved Notation "[ Δ ||-v σ : Γ | VΓ | wfΔ | f ]< wl >" (at level 0, Δ, σ, wl, Γ, VΓ, wfΔ, f at level 50).
+Reserved Notation "[ Δ ||-v σ ≅ σ' : Γ | VΓ | wfΔ | vσ | f ]< wl >" (at level 0, Δ, σ, σ', wl, Γ, VΓ, wfΔ, vσ, f at level 50).
 Reserved Notation "[ Γ ||-v< l > A | VΓ ]< wl >" (at level 0, wl, Γ, l , A, VΓ at level 50).
-Reserved Notation "[ P | Δ ||-v σ : Γ | wfΔ ]< wl >" (at level 0, P, Δ, σ, wl, Γ, wfΔ at level 50).
-Reserved Notation "[ P | Δ ||-v σ ≅ σ' : Γ | wfΔ | vσ ]< wl >"  (at level 0, P, Δ, σ, σ', wl, Γ, wfΔ, vσ at level 50).
+Reserved Notation "[ P | Δ ||-v σ : Γ | wfΔ | f ]< wl >" (at level 0, P, Δ, σ, wl, Γ, wfΔ, f at level 50).
+Reserved Notation "[ P | Δ ||-v σ ≅ σ' : Γ | wfΔ | vσ | f ]< wl >"  (at level 0, P, Δ, σ, σ', wl, Γ, wfΔ, vσ, f at level 50).
 Reserved Notation "[ R | ||-v Γ ]< wl >"  (at level 0, R, wl, Γ at level 50).
-Reserved Notation "[ R | Δ ||-v σ : Γ | RΓ | wfΔ ]< wl >"  (at level 0, R, Δ, σ, wl, Γ, RΓ, wfΔ at level 50).
-Reserved Notation "[ R | Δ ||-v σ ≅ σ' : Γ | RΓ | wfΔ | vσ ]< wl >" (at level 0, R, Δ, σ, σ', wl, Γ, RΓ, wfΔ, vσ at level 50).
-Reserved Notation "[ P | Γ ||-v< l > A ]< wl >"  (at level 0, P, wl, Γ, l, A at level 50).
+Reserved Notation "[ R | Δ ||-v σ : Γ | RΓ | wfΔ | f ]< wl >"  (at level 0, R, Δ, σ, wl, Γ, RΓ, wfΔ, f at level 50).
+Reserved Notation "[ R | Δ ||-v σ ≅ σ' : Γ | RΓ | wfΔ | vσ | f ]< wl >" (at level 0, R, Δ, σ, σ', wl, Γ, RΓ, wfΔ, vσ, f at level 50).
+Reserved Notation "[ P | Γ ||-v< l > A | f ]< wl >"  (at level 0, P, wl, Γ, l, A, f at level 50).
 

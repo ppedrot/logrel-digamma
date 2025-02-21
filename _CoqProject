@@ -43,6 +43,7 @@ theories/LogicalRelation/Id.v
 
 theories/Validity.v
 theories/Substitution/Irrelevance.v
+theories/Substitution/Monotonicity.v
 theories/Substitution/Properties.v
 theories/Substitution/Escape.v
 theories/Substitution/Conversion.v
