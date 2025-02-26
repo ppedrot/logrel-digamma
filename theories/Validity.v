@@ -493,19 +493,19 @@ Ltac instValid vσ :=
   repeat lazymatch goal with
   | [H : typeValidity _ _ _ _ _ |- _] =>
     let X := fresh "R" H in
-    try pose (X := validTy H wfΔ vσ) ;
+    try pose (X := validTy H _ wfΔ vσ) ;
     block H
   | [H : termValidity _ _ _ _ _ _ _ |- _] =>
     let X := fresh "R" H in
-    try pose (X := validTm H wfΔ vσ) ;
+    try pose (X := validTm H _ wfΔ vσ) ;
     block H
   | [H : typeEqValidity _ _ _ _ _ _ _ |- _] =>
     let X := fresh "R" H in
-    try pose (X := validTyEq H wfΔ vσ) ;
+    try pose (X := validTyEq H _ wfΔ vσ) ;
     block H
   | [H : termEqValidity _ _ _ _ _ _ _ _ |- _] =>
     let X := fresh "R" H in
-    try pose (X := validTmEq H wfΔ vσ) ;
+    try pose (X := validTmEq H _ wfΔ vσ) ;
     block H
   end; unblock.
 
@@ -513,11 +513,11 @@ Ltac instValidExt vσ' vσσ' :=
   repeat lazymatch goal with
   | [H : typeValidity _ _ _ _ _ |- _] =>
     let X := fresh "RE" H in
-    try pose (X := validTyExt H _ _ vσ' vσσ') ;
+    try pose (X := validTyExt H _ _ _ vσ' vσσ') ;
     block H
   | [H : termValidity _ _ _ _ _ _ _ |- _] =>
     let X := fresh "RE" H in
-    try pose (X := validTmExt H _ _ vσ' vσσ') ;
+    try pose (X := validTmExt H _ _ _ vσ' vσσ') ;
     block H
   end; unblock.
 
