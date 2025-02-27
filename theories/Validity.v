@@ -439,6 +439,31 @@ Section Inductions.
     all: reflexivity.
   Defined.
 
+  Corollary invValidity {wl Γ}
+    (VΓ : [||-v Γ]< wl >) :
+  match Γ as Γ return [||-v Γ]< wl > -> Type with
+  | nil => fun VΓ₀ =>
+             ∑ Hsub Hext, VΓ₀ = Build_VAdequate VΓ₀.(VAd.pack) (VREmpty _ _ Hsub Hext)
+  | (A :: Γ)%list =>
+      fun VΓ₀ =>
+        ∑ l VΓ' VA Hsub Hext,
+        VΓ₀ = validSnoc (A := A) (l := l) (ext := VΓ₀.(VAd.pack).(VPack.eqSubst)) VΓ' VA  Hsub Hext
+    end VΓ.
+  Proof.
+    destruct VΓ as [[sub ext] GAd].
+    destruct Γ ; cbn in *.
+    1,2: refine (match GAd with
+            | VREmpty vSubst vExt Hsub Hext => _
+            | VRSnoc sub ext VG VGAd VA Hsub Hext => _
+                 end).
+    2,3: intros X x ; easy.
+    all: repeat (unshelve eexists _ ; [assumption | ]).
+    1: reflexivity.
+    exists (Build_VAdequate _ VGAd), VA, Hsub, Hext.
+    reflexivity.
+  Defined.
+    
+
   Theorem validity_rect {wl}
     (P : forall {Γ : context}, [||-v Γ]< wl > -> Type)
     (hε : forall sub ext Hsub Hext,
