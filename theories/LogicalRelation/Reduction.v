@@ -203,6 +203,13 @@ Proof.
   intros ? []; now eapply redSubstTerm.
 Qed.
 
+Lemma WredwfSubstTerm {wl Γ A t u l} (RA : W[Γ ||-<l> A]< wl >) :
+  W[Γ ||-<l> u : A | RA]< wl > ->
+  [Γ |- t :⤳*: u : A ]< wl > ->
+  W[Γ ||-<l> t : A | RA]< wl > × W[Γ ||-<l> t ≅ u : A | RA]< wl >.
+Proof.
+  intros ? []; now eapply WredSubstTerm.
+Qed.
 
 Lemma redFwd {wl Γ l A B} :
   [Γ ||-<l> A]< wl > ->

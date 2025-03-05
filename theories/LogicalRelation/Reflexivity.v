@@ -9,15 +9,23 @@ Set Universe Polymorphism.
 Section Reflexivities.
   Context `{GenericTypingProperties}.
   
-  Definition reflLRTyEq {l wl Γ A} (lr : [ Γ ||-< l > A ]< wl > ) : [ Γ ||-< l > A ≅ A | lr ]< wl >.
+  Definition reflLRTyEq {l wl Γ A} (lr : [ Γ ||-< l > A ]< wl > ) :
+    [ Γ ||-< l > A ≅ A | lr ]< wl >.
   Proof.
     pattern l, wl, Γ, A, lr; eapply LR_rect_TyUr; intros ???? [] **.
     all: try match goal with H : PolyRed _ _ _ _ _ |- _ => destruct H; econstructor; tea end.
     all: try now econstructor.
     Unshelve.
-    all: cbn in * ; try eassumption.
+    all: cbn in * ; eassumption.
     (* econstructor; tea; now eapply escapeEqTerm. *)
   Qed.
+
+  Definition WreflLRTyEq {l wl Γ A} (lr : W[ Γ ||-< l > A ]< wl > ) :
+    W[ Γ ||-< l > A ≅ A | lr ]< wl >.
+  Proof.
+    exists (WT _ lr).
+    intros ; now eapply reflLRTyEq.
+  Defined.
 
   (* Deprecated *)
   Corollary LRTyEqRefl {l wl Γ A eqTy redTm eqTm}

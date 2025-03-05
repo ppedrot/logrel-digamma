@@ -1,6 +1,6 @@
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
 From LogRel Require Import Utils BasicAst Notations LContexts Context NormalForms Weakening GenericTyping Monad LogicalRelation Validity.
-From LogRel.LogicalRelation Require Import Induction Irrelevance Escape Reflexivity Weakening Neutral Monotonicity Transitivity NormalRed.
+From LogRel.LogicalRelation Require Import Induction Irrelevance Escape Reflexivity Split Weakening Neutral Monotonicity Transitivity NormalRed.
 From LogRel.Substitution Require Import Irrelevance Properties Conversion.
 
 Set Universe Polymorphism.
@@ -16,14 +16,17 @@ Proof. now asimpl. Qed.
 
 Lemma substS {wl Γ F G t l} {VΓ : [||-v Γ]< wl >}
   {VF : [Γ ||-v<l> F | VΓ]< wl >}
-  (VG : [Γ,, F ||-v<l> G | validSnoc VΓ VF]< wl >)
+  (VG : [Γ,, F ||-v<l> G | validSnoc' VΓ VF]< wl >)
   (Vt : [Γ ||-v<l> t : F | VΓ | VF]< wl >) :
   [Γ ||-v<l> G[t..] | VΓ]< wl >.
 Proof.
-  opector; intros; rewrite singleSubstComm.
-  - unshelve eapply validTy. 3,4:  tea.
+  opector; intros.
+  1: rewrite singleSubstComm.
+  - unshelve eapply validTy. 3,4,5:  tea.
+    3: eassumption.
     now eapply consSubstSvalid.
-  - irrelevance0. 1: symmetry; apply singleSubstComm.
+  - rewrite (singleSubstComm G t σ').
+    Wirrelevance0. 1: symmetry; apply singleSubstComm.
     eapply validTyExt.
     1: eapply consSubstS; now  eapply validTm.
     now eapply consSubstSEqvalid.
@@ -34,8 +37,8 @@ Lemma substSEq {wl Γ F F' G G' t t' l} {VΓ : [||-v Γ]< wl >}
   {VF : [Γ ||-v<l> F | VΓ]< wl >}
   {VF' : [Γ ||-v<l> F' | VΓ]< wl >}
   (VFF' : [Γ ||-v<l> F ≅ F' | VΓ | VF]< wl >)
-  (VΓF := validSnoc VΓ VF)
-  (VΓF' := validSnoc VΓ VF')
+  (VΓF := validSnoc' VΓ VF)
+  (VΓF' := validSnoc' VΓ VF')
   {VG : [Γ,, F ||-v<l> G | VΓF]< wl >}
   (VG' : [Γ,, F' ||-v<l> G' | VΓF']< wl >)
   (VGG' : [Γ ,, F ||-v<l> G ≅ G' | VΓF | VG]< wl >)
@@ -49,11 +52,11 @@ Proof.
   assert (VtF' : [Γ ||-v<l> t : F' | VΓ | VF']< wl >) by now eapply conv.
   pose proof (consSubstSvalid Vσ Vt').
   pose proof (consSubstSvalid Vσ VtF').
-  rewrite singleSubstComm; irrelevance0.
+  rewrite (singleSubstComm G' t' σ) ; Wirrelevance0.
   1: symmetry; apply singleSubstComm.
-  eapply transEq.
+  eapply WtransEq.
   - unshelve now eapply validTyEq.
-    2: now eapply consSubstSvalid.
+    3: now eapply consSubstSvalid.
   - eapply validTyExt; tea.
     unshelve econstructor.
     1: eapply reflSubst.
@@ -64,62 +67,61 @@ Qed.
 
 
 
-
 Lemma substSTm {wl Γ F G t f l} {VΓ : [||-v Γ]< wl >}
   {VF : [Γ ||-v<l> F | VΓ]< wl >}
-  (VΓF := validSnoc VΓ VF)
+  (VΓF := validSnoc' VΓ VF)
   {VG : [Γ,, F ||-v<l> G | VΓF]< wl >}
   (Vt : [Γ ||-v<l> t : F | VΓ | VF]< wl >) 
   (Vf : [Γ ,, F ||-v<l> f : G | VΓF | VG]< wl >)
   (VGt := substS VG Vt) :
   [Γ ||-v<l> f[t..] : G[t..] | VΓ | VGt]< wl >.
 Proof.
-  constructor; intros; rewrite !singleSubstComm; irrelevance0. 
+  constructor; intros; rewrite !singleSubstComm; Wirrelevance0. 
   1,3: symmetry; apply singleSubstComm.
   - now eapply validTm.
   - eapply validTmExt; tea.
     1: now apply consSubstSvalid.
     now apply consSubstSEqvalid.
-    Unshelve. 1,3: eassumption.
+    Unshelve. 1,2,4: eassumption.
     now apply consSubstSvalid.
 Qed.
 
-Lemma substSTmEq {wl Γ F F' G G' t t' f f' l} (VΓ : [||-v Γ]< wl >) 
+Lemma substSTmEq {wl Γ F F' G G' t t' h h' l} (VΓ : [||-v Γ]< wl >) 
   (VF : [Γ ||-v<l> F | VΓ]< wl >)
   (VF' : [Γ ||-v<l> F' | VΓ]< wl >)
   (VFF' : [Γ ||-v<l> F ≅ F' | VΓ | VF]< wl >)
-  (VΓF := validSnoc VΓ VF)
-  (VΓF' := validSnoc VΓ VF')
+  (VΓF := validSnoc' VΓ VF)
+  (VΓF' := validSnoc' VΓ VF')
   (VG : [Γ,, F ||-v<l> G | VΓF]< wl >)
   (VG' : [Γ,, F' ||-v<l> G' | VΓF']< wl >)
   (VGG' : [Γ ,, F ||-v<l> G ≅ G' | VΓF | VG]< wl >)
   (Vt : [Γ ||-v<l> t : F | VΓ | VF]< wl >)
   (Vt' : [Γ ||-v<l> t' : F' | VΓ | VF']< wl >)
   (Vtt' : [Γ ||-v<l> t ≅ t' : F | VΓ | VF]< wl >) 
-  (Vf : [Γ ,, F ||-v<l> f : G | VΓF | VG]< wl >)
-  (Vf' : [Γ ,, F' ||-v<l> f' : G' | VΓF' | VG']< wl >)
-  (Vff' : [Γ ,, F ||-v<l> f ≅ f' : G | VΓF | VG]< wl >) :
-  [Γ ||-v<l> f[t..] ≅ f'[t'..] : G[t..] | VΓ | substS VG Vt]< wl >.
+  (Vh : [Γ ,, F ||-v<l> h : G | VΓF | VG]< wl >)
+  (Vh' : [Γ ,, F' ||-v<l> h' : G' | VΓF' | VG']< wl >)
+  (Vhh' : [Γ ,, F ||-v<l> h ≅ h' : G | VΓF | VG]< wl >) :
+  [Γ ||-v<l> h[t..] ≅ h'[t'..] : G[t..] | VΓ | substS VG Vt]< wl >.
 Proof.
-  constructor; intros; rewrite !singleSubstComm; irrelevance0. 
+  constructor; intros; rewrite !singleSubstComm; Wirrelevance0. 
   1: symmetry; apply singleSubstComm.
-  eapply transEqTerm.
+  eapply WtransEqTerm.
   + unshelve now eapply validTmEq.
-    2: now eapply consSubstSvalid.
-  + assert (Vσt : [Δ ||-v (t[σ] .: σ) : _ | VΓF' | wfΔ]< wl >)
+    3: now eapply consSubstSvalid.
+  + assert (Vσt : [Δ ||-v (t[σ] .: σ) : _ | VΓF' | wfΔ | f]< wl >)
      by (eapply consSubstSvalid; tea; now eapply conv).
-    assert (Vσt' : [Δ ||-v (t'[σ] .: σ) : _ | VΓF' | wfΔ]< wl >)
+    assert (Vσt' : [Δ ||-v (t'[σ] .: σ) : _ | VΓF' | wfΔ | f]< wl >)
      by (eapply consSubstSvalid; tea; now eapply conv).
-    assert (Vσtσt' : [Δ ||-v (t[σ] .: σ) ≅ (t'[σ] .: σ) : _ | VΓF' | wfΔ | Vσt]< wl >).
+    assert (Vσtσt' : [Δ ||-v (t[σ] .: σ) ≅ (t'[σ] .: σ) : _ | VΓF' | wfΔ | Vσt | f]< wl >).
     1:{
       constructor.
-      - bsimpl; epose (reflSubst _  _ Vσ); now eapply irrelevanceSubstEq.
-      - bsimpl; eapply validTmEq. now eapply convEq.
+      - fsimpl; epose (reflSubst _ _ _ Vσ) ; now eapply irrelevanceSubstEq.
+      - fsimpl; eapply validTmEq. now eapply convEq.
     }
-    eapply LRTmEqRedConv.
-    2: eapply (validTmExt Vf' _ Vσt Vσt' Vσtσt').
-    eapply LRTyEqSym. now eapply validTyEq.
-    Unshelve. 2: now eapply consSubstSvalid.
+    eapply WLRTmEqRedConv.
+    2: eapply (validTmExt Vh' _ _ Vσt Vσt' Vσtσt').
+    eapply WLRTyEqSym. now eapply validTyEq.
+    Unshelve. 3: now eapply consSubstSvalid.
 Qed.
 
 (* Skipping a series of lemmas on single substitution of a weakened term *)
@@ -131,33 +133,35 @@ Proof. now bsimpl. Qed.
 
 Lemma substLiftS {wl Γ F G t l} (VΓ : [||-v Γ]< wl >)
   (VF : [Γ ||-v<l> F | VΓ]< wl >)
-  (VΓF := validSnoc VΓ VF)
+  (VΓF := validSnoc' VΓ VF)
   (VG : [Γ,, F ||-v<l> G | VΓF]< wl >)
   (VF' := wk1ValidTy VF VF)
   (Vt : [Γ,, F ||-v<l> t : F⟨@wk1 Γ F⟩ | VΓF | VF']< wl >) :
   [Γ ,, F ||-v<l> G[t]⇑ | VΓF]< wl >.
 Proof.
-  assert (h : forall Δ σ (wfΔ: [|- Δ]< wl >)
-    (vσ: [VΓF | Δ ||-v σ : Γ,, F | wfΔ]< wl >),
-    [VΓF | Δ ||-v (t[σ] .: ↑ >> σ) : _ | wfΔ ]< wl >).
+  assert (h : forall Δ σ wl' f (wfΔ: [|- Δ]< wl' >)
+    (vσ: [VΓF | Δ ||-v σ : Γ,, F | wfΔ | f]< wl >),
+    [VΓF | Δ ||-v (t[σ] .: ↑ >> σ) : _ | wfΔ | f]< wl >).
   1:{
     unshelve econstructor.
-    + asimpl; now eapply validTail.
-    + cbn. irrelevance0.
+    + asimpl; now eapply projT1.
+    + cbn. Wirrelevance0.
       2: now eapply validTm.
       now bsimpl.
   }
-  opector; intros; rewrite liftSubstComm.
-  - unshelve eapply validTy; cycle 2; tea; now eapply h.
-  - irrelevance0.
+  opector; intros.
+  - rewrite liftSubstComm.
+    unshelve eapply validTy; cycle 2; tea; now eapply h.
+  - rewrite (liftSubstComm _ _ σ').
+    Wirrelevance0.
     2: unshelve eapply validTyExt.
-    8: now eapply h.
-    4: now eapply (h _ _  _ vσ).
-    1: now bsimpl.
+    rewrite (liftSubstComm _ _ σ) ; reflexivity.
+    7: now eapply h.
+    2: now eapply (h _ _ _ _ _ vσ').
     1: tea.
     constructor.
-    + asimpl; eapply irrelevanceSubstEq; now eapply eqTail.
-    + cbn. irrelevance0.
+    + fsimpl; eapply irrelevanceSubstEq; exact (fst vσσ').
+    + cbn. Wirrelevance0.
       2: now eapply validTmExt.
       now bsimpl.
       Unshelve. all:tea.
@@ -165,7 +169,7 @@ Qed.
 
 Lemma substLiftSEq {wl Γ F G G' t l} (VΓ : [||-v Γ]< wl >)
   (VF : [Γ ||-v<l> F | VΓ]< wl >)
-  (VΓF := validSnoc VΓ VF)
+  (VΓF := validSnoc' VΓ VF)
   (VG : [Γ,, F ||-v<l> G | VΓF]< wl >)
   (VG' : [Γ,, F ||-v<l> G' | VΓF]< wl >)
   (VGeq : [Γ,, F ||-v<l> G ≅ G' | VΓF | VG]< wl >)
@@ -173,18 +177,20 @@ Lemma substLiftSEq {wl Γ F G G' t l} (VΓ : [||-v Γ]< wl >)
   (Vt : [Γ,, F ||-v<l> t : F⟨@wk1 Γ F⟩ | VΓF | VF']< wl >) :
   [Γ ,, F ||-v<l> G[t]⇑ ≅ G'[t]⇑ | VΓF | substLiftS _ VF VG Vt]< wl >.
 Proof.
-  constructor; intros; rewrite liftSubstComm.
-  assert (Vσt : [Δ ||-v (t[σ] .: ↑ >> σ) : _ | VΓF | wfΔ ]< wl >). 1:{
+  constructor; intros.
+  assert (Vσt : [Δ ||-v (t[σ] .: ↑ >> σ) : _ | VΓF | wfΔ | f]< wl >). 1:{
     unshelve econstructor.
-    + bsimpl. now eapply validTail.
-    + bsimpl. instValid Vσ. irrelevance.
+    + fsimpl. now eapply projT1.
+    + fsimpl. instValid Vσ. Wirrelevance.
   }
-  instValid Vσt. irrelevance.
+  instValid Vσt. Wirrelevance0.
+  2:{ rewrite (liftSubstComm _ _ σ). eassumption. }
+  now bsimpl.
 Qed.
 
 Lemma substLiftSEq' {wl Γ F G G' t t' l} (VΓ : [||-v Γ]< wl >)
   (VF : [Γ ||-v<l> F | VΓ]< wl >)
-  (VΓF := validSnoc VΓ VF)
+  (VΓF := validSnoc' VΓ VF)
   (VG : [Γ,, F ||-v<l> G | VΓF]< wl >)
   (VG' : [Γ,, F ||-v<l> G' | VΓF]< wl >)
   (VGeq : [Γ,, F ||-v<l> G ≅ G' | VΓF | VG]< wl >)
@@ -196,16 +202,16 @@ Lemma substLiftSEq' {wl Γ F G G' t t' l} (VΓ : [||-v Γ]< wl >)
 Proof.
   eapply transValidTyEq.
   1: eapply substLiftSEq; [| exact VGeq]; tea.
-  constructor; intros; irrelevance0; rewrite liftSubstComm ; [reflexivity|].
+  constructor; intros; Wirrelevance0; rewrite liftSubstComm ; [reflexivity|].
   instValid Vσ.
   eapply validTyExt.
   + unshelve eapply consSubstS.
-    6: now eapply validTail.
+    6: now eapply projT1.
     3: exact VF. 
-    irrelevance.
+    Wirrelevance.
   + unshelve eapply consSubstSEq'.
-    1: now eapply validTail.
-    1,3: irrelevance.
+    1: now eapply projT1.
+    1,3: Wirrelevance.
     eapply reflSubst.
     Unshelve. 3: tea. now eapply substLiftS.
 Qed.
@@ -213,38 +219,61 @@ Qed.
 
 Lemma singleSubstPoly {wl Γ F G t l lF}
   (RFG : PolyRed wl Γ l F G)
-  {RF : [Γ ||-<lF> F]< wl >}
-  (Rt : [Γ ||-<lF> t : F | RF]< wl >) :
+  {RF : W[Γ ||-<lF> F]< wl >}
+  (Rt : W[Γ ||-<lF> t : F | RF]< wl >) :
   W[Γ ||-<l> G[t..]]< wl >.
 Proof.
   replace G[t..] with G[t .: wk_id (Γ:=Γ) >> tRel] by now bsimpl.
-  econstructor ; intros wl' Hover.
-  unshelve eapply (PolyRed.posRed RFG).
-  5: eassumption.
-  2: escape; now gen_typing.
-  1: now eapply wfLCon_le_id.
-  irrelevance0 ; [ | eassumption].
-  now bsimpl.
+  pattern wl ; unshelve eapply split_to_over_tree ; [ | intros ??? ; exact Split | ].
+  - eapply DTree_fusion.
+    + exact (WT _ RF).
+    + exact (WTTm _ Rt).
+  - intros wl' Hover.
+    econstructor ; intros wl'' Hover'.
+    unshelve eapply (PolyRed.posRed RFG).
+    5: exact Hover'.
+    2: eapply wfc_Ltrans ; [now eapply over_tree_le | ] ; Wescape; now gen_typing.
+    1: now eapply over_tree_le.
+    irrelevance0 ; [ | now eapply Rt, over_tree_fusion_r].
+    now bsimpl.
+    Unshelve.
+    now eapply over_tree_fusion_l.
 Qed.
+
 
 Lemma singleSubstΠ1 {wl Γ F G t l lF}
-  (ΠFG : [Γ ||-<l> tProd F G]< wl >)
-  {RF : [Γ ||-<lF> F]< wl >}
-  (Rt : [Γ ||-<lF> t : F | RF]< wl >) :
+  (ΠFG : W[Γ ||-<l> tProd F G]< wl >)
+  {RF : W[Γ ||-<lF> F]< wl >}
+  (Rt : W[Γ ||-<lF> t : F | RF]< wl >) :
   W[Γ ||-<l> G[t..]]< wl >.
 Proof.
+  pattern wl ; unshelve eapply split_to_over_tree ; [ | intros ??? ; exact Split | ].
+  1: exact (WT _ ΠFG).
+  intros wl' Hover.
   eapply singleSubstPoly; tea.
-  eapply (ParamRedTy.polyRed (normRedΠ0 (invLRΠ ΠFG))).
+  - pose (Hyp:= WRed _ ΠFG _ Hover).
+    now eapply (ParamRedTy.polyRed (normRedΠ0 (invLRΠ Hyp))).
+  - now eapply WTm_Ltrans.
+    Unshelve.
+    now eapply over_tree_le.
 Qed.
 
+
 Lemma singleSubstΣ1 {wl Γ F G t l lF}
-  (ΠFG : [Γ ||-<l> tSig F G]< wl >)
-  {RF : [Γ ||-<lF> F]< wl >}
-  (Rt : [Γ ||-<lF> t : F | RF]< wl >) :
+  (ΠFG : W[Γ ||-<l> tSig F G]< wl >)
+  {RF : W[Γ ||-<lF> F]< wl >}
+  (Rt : W[Γ ||-<lF> t : F | RF]< wl >) :
   W[Γ ||-<l> G[t..]]< wl >.
 Proof.
+  pattern wl ; unshelve eapply split_to_over_tree ; [ | intros ??? ; exact Split | ].
+  1: exact (WT _ ΠFG).
+  intros wl' Hover.
   eapply singleSubstPoly; tea.
-  eapply (ParamRedTy.polyRed (normRedΣ0 (invLRΣ ΠFG))).
+  - pose (Hyp:= WRed _ ΠFG _ Hover).
+    now eapply (ParamRedTy.polyRed (normRedΣ0 (invLRΣ Hyp))).
+  - now eapply WTm_Ltrans.
+    Unshelve.
+    now eapply over_tree_le.
 Qed.
 
 Lemma singleSubstPoly2 {wl Γ F F' G G' t t' l lF lF'}
@@ -291,37 +320,66 @@ Proof.
 Qed.
 
 Lemma singleSubstΠ2 {wl Γ F F' G G' t t' l lF lF'}
-  {ΠFG : [Γ ||-<l> tProd F G]< wl >}
-  (ΠFGeq : [Γ ||-<l> tProd F G ≅ tProd F' G' | ΠFG]< wl >)
-  {RF : [Γ ||-<lF> F]< wl >}
-  {RF' : [Γ ||-<lF'> F']< wl >}
-  (Rt : [Γ ||-<lF> t : F | RF]< wl >) 
-  (Rt' : [Γ ||-<lF'> t' : F' | RF']< wl >) 
-  (Rteq : [Γ ||-<lF> t ≅ t' : F | RF]< wl >)
+  {ΠFG : W[Γ ||-<l> tProd F G]< wl >}
+  (ΠFGeq : W[Γ ||-<l> tProd F G ≅ tProd F' G' | ΠFG]< wl >)
+  {RF : W[Γ ||-<lF> F]< wl >}
+  {RF' : W[Γ ||-<lF'> F']< wl >}
+  (Rt : W[Γ ||-<lF> t : F | RF]< wl >) 
+  (Rt' : W[Γ ||-<lF'> t' : F' | RF']< wl >) 
+  (Rteq : W[Γ ||-<lF> t ≅ t' : F | RF]< wl >)
   (RGt : W[Γ ||-<lF> G[t..]]< wl >)
   (RGt' : W[Γ ||-<lF'> G'[t'..]]< wl >) :
   W[Γ ||-<lF> G[t..] ≅ G'[t'..] | RGt ]< wl >.
 Proof.
-  eapply singleSubstPoly2; tea.
-  pose (hΠ := normRedΠ0 (invLRΠ ΠFG)).
-  assert (heq : [Γ ||-<l> tProd F G ≅ tProd F' G' | LRPi' hΠ]< wl >) by irrelevance.
-  destruct heq as [?? red' ?? polyRed]; cbn in *.
-  assert (h' :=redtywf_whnf red' whnf_tProd).
-  symmetry in h'; injection h'; clear h'; intros ;  subst.
-  exact polyRed.
+  revert RGt RGt'.
+  pattern wl ; unshelve eapply split_to_over_tree.
+  - do 2 eapply DTree_fusion ; [do 2 eapply DTree_fusion | ..].
+    + now eapply ΠFG.
+    + now eapply ΠFGeq.
+    + now eapply RF.
+    + now eapply RF'.
+    + now eapply Rt.
+    + now eapply Rt'.
+    + now eapply Rteq.
+  - intros wl'' n ne Hl Hr RGt RGt'.
+    unshelve eapply EqSplit' ; [ | | | | eapply Hl | eapply Hr].
+    all: eapply WLtrans ; [ | eassumption].
+    all: now eapply LCon_le_step, wfLCon_le_id.
+  - cbn ; intros wl' Hover RGt RGt'.
+    eapply singleSubstPoly2; tea.
+    + unshelve epose (hΠ := normRedΠ0 (invLRΠ (WRed _ ΠFG _ _))).
+      2: now do 4 eapply over_tree_fusion_l.
+      assert (heq : [Γ ||-<l> tProd F G ≅ tProd F' G' | LRPi' hΠ]< wl' >).
+      { irrelevanceRefl ; unshelve eapply ΠFGeq.
+        1: now do 4 eapply over_tree_fusion_l.
+        1: eapply over_tree_fusion_r ; now do 3 eapply over_tree_fusion_l.
+      }
+      destruct heq as [?? red' ?? polyRed]; cbn in *.
+      assert (h' :=redtywf_whnf red' whnf_tProd).
+      symmetry in h'; injection h'; clear h'; intros ;  subst.
+      exact polyRed.
+    + unshelve eapply Rt.
+      * eapply over_tree_fusion_l, over_tree_fusion_r ; now do 2 eapply over_tree_fusion_l.
+      * now eapply over_tree_fusion_r, over_tree_fusion_l.
+    + unshelve eapply Rt'.
+      * do 2 eapply over_tree_fusion_r ; now do 2 eapply over_tree_fusion_l.
+      * now eapply over_tree_fusion_l, over_tree_fusion_r.
+    + unshelve eapply Rteq.
+      now do 2 eapply over_tree_fusion_r.
 Qed.
-
+      
+      
 Lemma substSΠaux {wl Γ F G t l} 
   {VΓ : [||-v Γ]< wl >}
   {VF : [Γ ||-v<l> F | VΓ]< wl >}
   (VΠFG : [Γ ||-v<l> tProd F G | VΓ]< wl >)
   (Vt : [Γ ||-v<l> t : F | VΓ | VF]< wl >)
-  (Δ : context) (σ : nat -> term) 
-  (wfΔ : [ |-[ ta ] Δ]< wl >) (vσ : [VΓ | Δ ||-v σ : Γ | wfΔ]< wl >) :
-  W[Δ ||-< l > G[up_term_term σ][t[σ]..]]< wl >.
+  (Δ : context) (σ : nat -> term) wl' f
+  (wfΔ : [ |-[ ta ] Δ]< wl' >) (vσ : [VΓ | Δ ||-v σ : Γ | wfΔ | f]< wl >) :
+  W[Δ ||-< l > G[up_term_term σ][t[σ]..]]< wl' >.
 Proof.
   eapply singleSubstΠ1.
-  eapply (validTy VΠFG); tea.
+  unshelve eapply (validTy VΠFG); tea.
   now eapply validTm.
   Unshelve. all: eassumption.
 Qed.
@@ -334,18 +392,17 @@ Lemma substSΠ {wl Γ F G t l}
   {VF : [Γ ||-v<l> F | VΓ]< wl >}
   (VΠFG : [Γ ||-v<l> tProd F G | VΓ]< wl >)
   (Vt : [Γ ||-v<l> t : F | VΓ | VF]< wl >) :
-  W[Γ ||-v<l> G[t..] | VΓ]< wl >.
+  [Γ ||-v<l> G[t..] | VΓ]< wl >.
 Proof.
   opector; intros.
   - rewrite singleSubstComm'; now eapply substSΠaux.
-  - rewrite singleSubstComm'.
-    irrelevance0. 1: symmetry; apply singleSubstComm'.
+  - rewrite (singleSubstComm' _ t σ').
+    Wirrelevance0. 1: symmetry; apply singleSubstComm'.
     eapply singleSubstΠ2.
-    1: eapply (validTyExt VΠFG).
-    1, 2: tea.
-    1, 2: now eapply validTm.
+    5: now eapply substSΠaux.
+    1: now eapply (validTyExt VΠFG).
+    1,2: now eapply validTm.
     1: now eapply validTmExt.
-    now eapply substSΠaux.
     Unshelve. all: tea.
     now eapply substSΠaux.
 Qed.
@@ -364,8 +421,8 @@ Lemma substSΠeq {wl Γ F F' G G' t u l}
   [Γ ||-v<l> G[t..] ≅ G'[u..] | VΓ | VGt]< wl >.
 Proof.
   constructor; intros.
-  rewrite singleSubstComm'.
-  irrelevance0.
+  rewrite (singleSubstComm' G').
+  Wirrelevance0.
   1: symmetry; apply singleSubstComm'.
   eapply singleSubstΠ2.
   1: now eapply (validTyEq VΠFGeq).

@@ -1437,9 +1437,18 @@ Notation "W[ Γ ||-< l > A ≅ B | RA ]< wl >" := (WLogRelEq l wl Γ A B RA).
 Notation "W[ Γ ||-< l > t : A | RA ]< wl >" := (WLogRelTm l wl Γ t A RA).
 Notation "W[ Γ ||-< l > t ≅ u : A | RA ]< wl >" := (WLogRelTmEq l wl Γ t u A RA).
 
-Lemma instKripke `{GenericTypingProperties} {k Γ A l} (wfΓ : [|-Γ]< k >) (h : forall Δ (ρ : Δ ≤ Γ) (wfΔ : [|-Δ]< k >), [Δ ||-<l> A⟨ρ⟩]< k >) : [Γ ||-<l> A]< k >.
+Lemma instKripke `{GenericTypingProperties} {k Γ A l} (wfΓ : [|-Γ]< k >)
+  (h : forall Δ (ρ : Δ ≤ Γ) (wfΔ : [|-Δ]< k >), [Δ ||-<l> A⟨ρ⟩]< k >) :
+  [Γ ||-<l> A]< k >.
 Proof.
   specialize (h Γ wk_id wfΓ); now rewrite wk_id_ren_on in h.
+Qed.
+
+Lemma instKripke' `{GenericTypingProperties} {wl Γ A l} (wfΓ : [|-Γ]< wl >)
+  (h : forall Δ wl' (ρ : Δ ≤ Γ) (f : wl' ≤ε wl) (wfΔ : [|-Δ]< wl' >), [Δ ||-<l> A⟨ρ⟩]< wl' >) :
+  [Γ ||-<l> A]< wl >.
+Proof.
+  specialize (h Γ wl wk_id (wfLCon_le_id _) wfΓ); now rewrite wk_id_ren_on in h.
 Qed.
 
 (** ** Rebundling reducibility of Polynomial *)
@@ -1541,10 +1550,12 @@ Section PolyRed.
     : toAd (from PAad) = PAad.
   Proof. destruct PA, PAad; reflexivity. Qed.
 
+
 End PolyRed.
 
 Arguments PolyRed : clear implicits.
 Arguments PolyRed {_ _ _ _ _ _ _ _ _} _ _ _.
+
 
 End PolyRed.
 
@@ -1637,6 +1648,25 @@ Section EvenMoreDefs.
     : [ LogRel@{i j k l} l | Γ ||- A ]< k > :=
     LRbuild (LRSig (LogRelRec l) _ (ParamRedTy.toAd ΠA)).
 
+  
+  Record WPolyRed@{i j k l} (k : wfLCon) (Γ : context) (l : TypeLevel) (shp pos : term) :=
+    { WPol : DTree k  ;
+      WRedPol {k'} (Ho : over_tree k k' WPol) :
+      PolyRed@{i j k l} k' Γ l shp pos ;
+    }.
+  Arguments WPol [_ _ _ _ _ ] _.
+  Arguments WRedPol [_ _ _ _ _] _ [_] _.
+
+  Record WPolyRedEq@{i j k l} {k : wfLCon} {Γ : context} {l : TypeLevel} {shp pos : term} (Hyp : WPolyRed@{i j k l} k Γ l shp pos)
+    (shp' pos' : term) :=
+    { WPolEq : DTree k  ;
+      WRedPolEq {k'} (Ho : over_tree k k' (WPol Hyp))
+        (Ho' : over_tree k k' WPolEq) :
+      PolyRedEq@{k} (PolyRed.toPack (WRedPol Hyp Ho)) shp' pos' ;
+    }.
+  Arguments WPolEq [_ _ _ _ _] _.
+  Arguments WRedPolEq [_ _ _ _ _ _] _.
+  
 End EvenMoreDefs.
 
 

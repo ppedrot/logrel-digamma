@@ -18,19 +18,19 @@ Lemma redwfSubstValid {wl Γ A t u l}
 Proof.
   assert (Veq : [Γ ||-v<l> t ≅ u : A | VΓ | VA]< wl >).
   {
-    constructor; intros; eapply redwfSubstTerm.
+    constructor; intros ; eapply WredwfSubstTerm.
     1: now eapply validTm.
     now eapply validRed.
   }
   split; tea; constructor; intros.
-  - eapply redwfSubstTerm.
+  - eapply WredwfSubstTerm.
     1: now eapply validTm.
     now eapply validRed.
-  - eapply transEqTerm. 2: eapply transEqTerm.
+  - eapply WtransEqTerm. 2: eapply WtransEqTerm.
     + now eapply validTmEq.
     + now eapply validTmExt.
-    + eapply LRTmEqSym. eapply LRTmEqRedConv.
-      1: eapply LRTyEqSym; now eapply validTyExt.
+    + eapply WLRTmEqSym. eapply WLRTmEqRedConv.
+      1: eapply WLRTyEqSym; now eapply validTyExt.
       now eapply validTmEq.
       Unshelve. all: tea.
 Qed.

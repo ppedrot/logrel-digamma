@@ -856,3 +856,89 @@ Proof.
 Defined.
   
 End Injection.
+
+Section Weakening_Ltrans.
+  Context `{GenericTypingProperties}.
+
+  Lemma wk_Ltrans@{h i j k l} {wl Γ Δ wl' A l}
+    (ρ : Δ ≤ Γ) 
+    (f : wl' ≤ε wl)
+    (wfΔ : [|- Δ]< wl' >) :
+    [LogRel@{i j k l} l | Γ ||- A]< wl > ->
+    [LogRel@{i j k l} l | Δ ||- A⟨ρ⟩]< wl' >.
+  Proof.
+    intros ; now eapply (wk@{i j k l}), (Ltrans@{h i j k l}).
+  Defined.
+
+  Lemma Wwk_Ltrans@{h i j k l} {wl Γ Δ wl' A l}
+    (ρ : Δ ≤ Γ) 
+    (f : wl' ≤ε wl)
+    (wfΔ : [|- Δ]< wl' >) :
+    WLogRel@{i j k l} l wl Γ A ->
+    WLogRel@{i j k l} l wl' Δ A⟨ρ⟩.
+  Proof.
+    intros ; now eapply (Wwk@{i j k l}), (WLtrans@{h i j k l}).
+  Defined.
+
+  Lemma wkEq_Ltrans@{h i j k l} {wl Γ Δ wl' A B l} (ρ : Δ ≤ Γ) (f : wl' ≤ε wl)
+    (wfΔ : [|- Δ]< wl' >)
+    (lrA : [Γ ||-<l> A]< wl >) : 
+    [LogRel@{i j k l} l | Γ ||- A ≅ B | lrA]< wl > ->
+    [LogRel@{i j k l} l | Δ ||- A⟨ρ⟩ ≅ B⟨ρ⟩ | wk_Ltrans@{h i j k l} ρ f wfΔ lrA]< wl' >.
+  Proof.
+    intros ; now eapply (wkEq@{i j k l}), (Eq_Ltrans@{h i j k l}).
+  Defined.
+
+  Lemma WwkEq_Ltrans@{h i j k l} {wl Γ Δ wl' A B l}
+    (ρ : Δ ≤ Γ) 
+    (f : wl' ≤ε wl)
+    (wfΔ : [|- Δ]< wl' >)
+    (lrA : W[Γ ||-<l> A]< wl >) :
+    WLogRelEq@{i j k l} l wl Γ A B lrA ->
+    WLogRelEq@{i j k l} l wl' Δ A⟨ρ⟩ B⟨ρ⟩ (Wwk_Ltrans@{h i j k l} ρ f wfΔ lrA).
+  Proof.
+    intros ; now eapply (WwkEq@{i j k l}), (WEq_Ltrans@{h i j k l}).
+  Defined.
+
+  Lemma wkTm_Ltrans@{h i j k l} {wl Γ Δ wl' t A l} (ρ : Δ ≤ Γ) (f : wl' ≤ε wl)
+    (wfΔ : [|- Δ]< wl' >)
+    (lrA : [Γ ||-<l> A]< wl >) : 
+    [LogRel@{i j k l} l | Γ ||- t : A | lrA]< wl > ->
+    [LogRel@{i j k l} l | Δ ||- t⟨ρ⟩ : A⟨ρ⟩ | wk_Ltrans@{h i j k l} ρ f wfΔ lrA]< wl' >.
+  Proof.
+    intros ; now eapply (wkTerm@{i j k l}), (Tm_Ltrans@{h i j k l}).
+  Defined.
+    
+  Lemma WwkTm_Ltrans@{h i j k l} {wl Γ Δ wl' t A l}
+    (ρ : Δ ≤ Γ) 
+    (f : wl' ≤ε wl)
+    (wfΔ : [|- Δ]< wl' >)
+    (lrA : W[Γ ||-<l> A]< wl >) :
+    WLogRelTm@{i j k l} l wl Γ t A lrA ->
+    WLogRelTm@{i j k l} l wl' Δ t⟨ρ⟩ A⟨ρ⟩ (Wwk_Ltrans@{h i j k l} ρ f wfΔ lrA).
+  Proof.
+    intros ; now eapply (WwkTerm@{i j k l}), (WTm_Ltrans@{h i j k l}).
+  Defined.
+
+  Lemma wkTmEq_Ltrans@{h i j k l} {wl Γ Δ wl' t u A l} (ρ : Δ ≤ Γ) (f : wl' ≤ε wl)
+    (wfΔ : [|- Δ]< wl' >)
+    (lrA : [Γ ||-<l> A]< wl >) : 
+    [LogRel@{i j k l} l | Γ ||- t ≅ u : A | lrA]< wl > ->
+    [LogRel@{i j k l} l | Δ ||- t⟨ρ⟩ ≅ u⟨ρ⟩ : A⟨ρ⟩ | wk_Ltrans@{h i j k l} ρ f wfΔ lrA]< wl' >.
+  Proof.
+    intros ; now eapply (wkTermEq@{i j k l}), (TmEq_Ltrans@{h i j k l}).
+  Defined.
+    
+  Lemma WwkEqTm_Ltrans@{h i j k l} {wl Γ Δ wl' t u A l}
+    (ρ : Δ ≤ Γ) 
+    (f : wl' ≤ε wl)
+    (wfΔ : [|- Δ]< wl' >)
+    (lrA : W[Γ ||-<l> A]< wl >) :
+    WLogRelTmEq@{i j k l} l wl Γ t u A lrA ->
+    WLogRelTmEq@{i j k l} l wl' Δ t⟨ρ⟩ u⟨ρ⟩ A⟨ρ⟩ (Wwk_Ltrans@{h i j k l} ρ f wfΔ lrA).
+  Proof.
+    intros ; now eapply (WwkTermEq@{i j k l}), (WTmEq_Ltrans@{h i j k l}).
+  Defined.
+
+  
+End Weakening_Ltrans.

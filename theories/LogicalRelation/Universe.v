@@ -1,5 +1,5 @@
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
-From LogRel Require Import Utils BasicAst Notations Context NormalForms Weakening GenericTyping LogicalRelation.
+From LogRel Require Import Utils BasicAst Notations Context NormalForms Weakening GenericTyping Monad LogicalRelation.
 From LogRel.LogicalRelation Require Import Induction Escape Irrelevance.
 
 Set Universe Polymorphism.
@@ -31,13 +31,38 @@ Section UniverseReducibility.
       + apply (UnivEq' rU rA).
   Qed.
 
-  Lemma UnivEqEq@{i j k l} {wl Γ A B l l'} (rU : [ LogRel@{i j k l} l | Γ ||- U ]< wl >) (rA : [LogRel@{i j k l} l' | Γ ||- A ]< wl >) (rAB : [ LogRel@{i j k l} l | Γ ||- A ≅ B : U | rU ]< wl >)
+  Lemma WUnivEq@{i j k l} {wl Γ A l} l' (rU : WLogRel@{i j k l} l wl Γ U) (rA : WLogRelTm@{i j k l} l wl Γ A U rU)
+    : WLogRel@{i j k l} l' wl Γ A.
+  Proof.
+    unshelve eexists (DTree_fusion _ _ _).
+    + exact (WTTm _ rA).
+    + exact (WT _ rU).
+    + intros ; now eapply UnivEq, rA, over_tree_fusion_l.
+      Unshelve.
+      now eapply over_tree_fusion_r.
+  Qed.
+
+  Lemma UnivEqEq@{i j k l} {wl Γ A B l l'} (rU : [ LogRel@{i j k l} l | Γ ||- U ]< wl >)
+    (rA : [LogRel@{i j k l} l' | Γ ||- A ]< wl >)
+    (rAB : [ LogRel@{i j k l} l | Γ ||- A ≅ B : U | rU ]< wl >)
     : [ LogRel@{i j k l} l' | Γ ||- A ≅ B | rA ]< wl >.
   Proof.
     assert [ LogRel@{i j k l} one | Γ ||- A ≅ B : U | LRU_@{i j k l} (redUOne rU) ]< wl > as [ _ _ _ hA _ hAB ] by irrelevance.
     eapply LRTyEqIrrelevantCum. exact hAB.
   Qed.
 
+  Lemma WUnivEqEq@{i j k l} {wl Γ A B l l'} (rU : WLogRel@{i j k l} l wl Γ U)
+    (rA : WLogRel@{i j k l} l' wl Γ A)
+    (rAB : WLogRelTmEq@{i j k l} l wl Γ A B U rU)
+    : WLogRelEq@{i j k l} l' wl Γ A B rA.
+  Proof.
+    unshelve eexists (DTree_fusion _ _ _).
+    + exact (WTTmEq _ rAB).
+    + exact (WT _ rU).
+    + intros ; now eapply UnivEqEq, rAB, over_tree_fusion_l.
+      Unshelve.
+      now eapply over_tree_fusion_r.
+  Qed.
 
   (* The lemmas below does not seem to be
      at the right levels for fundamental lemma ! *)

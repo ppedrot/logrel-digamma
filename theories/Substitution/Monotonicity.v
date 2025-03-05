@@ -1,6 +1,8 @@
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
 From LogRel Require Import Utils BasicAst Notations LContexts Context NormalForms Weakening GenericTyping LogicalRelation Validity.
 From LogRel.LogicalRelation Require Import Irrelevance Reflexivity Transitivity Monotonicity.
+From LogRel.Substitution Require Import Irrelevance.
+
 
 Set Universe Polymorphism.
 
@@ -198,4 +200,53 @@ Proof.
   3: eassumption.
 Qed.
 
+Lemma subst_Ltrans {Γ Δ σ wl wl' wl''}
+  {f: wl' ≤ε wl}
+  (f': wl'' ≤ε wl')
+  {VΓ : [||-v Γ ]< wl >}
+  {wfΔ : [ |-[ ta ] Δ ]< wl' >}
+  (wfΔ' : [ |-[ ta ] Δ ]< wl'' >) : 
+  [VΓ | Δ ||-v σ : Γ | wfΔ | f ]< wl > ->
+  [VΓ | Δ ||-v σ : Γ | wfΔ' | (f' •ε f) ]< wl >.
+Proof.
+  revert σ.
+  pattern Γ, VΓ.
+  eapply validity_rect.
+  - intros * ; cbn. do 2 rewrite Hsub ; trivial.
+  - intros * IH σ ; cbn ; do 2 rewrite Hsub.
+    intros [red eq] ; unshelve econstructor.
+    + eapply IH ; eassumption.
+    + cbn in * ; Wirrelevance0 ; [reflexivity | ].
+      eapply WTm_Ltrans ; eassumption.
+      Unshelve.
+      eassumption.
+Defined.
+
+Lemma eqsubst_Ltrans {Γ Δ σ σ' wl wl' wl''}
+  (f: wl' ≤ε wl)
+  (f': wl'' ≤ε wl')
+  (VΓ : [||-v Γ ]< wl >)
+  (wfΔ : [ |-[ ta ] Δ ]< wl' >)
+  (wfΔ' : [ |-[ ta ] Δ ]< wl'' >)
+  (Vσ: [VΓ | Δ ||-v σ : Γ | wfΔ | f ]< wl >) :
+  [VΓ | Δ ||-v σ ≅ σ' : Γ | wfΔ | Vσ | f ]< wl > ->
+  [VΓ | Δ ||-v σ ≅ σ' : Γ | wfΔ' | subst_Ltrans f' wfΔ' Vσ | (f' •ε f) ]< wl >.
+Proof.
+  revert σ σ' Vσ.
+  pattern Γ, VΓ.
+  eapply validity_rect.
+  - intros * ? ; cbn in *.
+    erewrite (Hext Δ wl'' σ σ' (f' •ε f) wfΔ' _) ; now constructor.
+  - intros * IH σ σ' Vσ Vσσ'.
+    cbn.
+    erewrite (Hext Δ wl'' σ σ' (f' •ε f) wfΔ').
+    econstructor.
+    + cbn in * ; eapply irrelevanceSubstEq.      
+      eapply IH.
+      rewrite Hext in Vσσ' ; destruct Vσσ' ; eassumption.
+    + cbn in * ; Wirrelevance0 ; [reflexivity | ].
+      rewrite Hext in Vσσ' ; destruct Vσσ'.
+      unshelve eapply WTmEq_Ltrans ; [ | eassumption | | eassumption].
+Qed.
+      
 End Monotonicity.

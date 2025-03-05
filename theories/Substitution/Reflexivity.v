@@ -11,7 +11,8 @@ Lemma reflValidTy {wl Γ A l} (VΓ : [||-v Γ]< wl >)
   (VA : [Γ ||-v<l> A | VΓ]< wl >) :
   [Γ ||-v<l> A ≅ A | VΓ | VA]< wl >.
 Proof.
-  constructor; intros; apply reflLRTyEq.
+  constructor; intros.
+  now apply WreflLRTyEq.
 Qed.
 
 Lemma reflValidTm {wl Γ t A l} (VΓ : [||-v Γ]< wl >)
@@ -19,7 +20,7 @@ Lemma reflValidTm {wl Γ t A l} (VΓ : [||-v Γ]< wl >)
   (Vt : [Γ ||-v<l> t : A | VΓ | VA]< wl >) :
   [Γ ||-v<l> t ≅ t : A | VΓ | VA]< wl >.
 Proof.
-  constructor; intros; apply reflLRTmEq; now eapply validTm.
+  constructor; intros; apply WreflLRTmEq; now eapply validTm.
 Qed.
 
 End Reflexivity.

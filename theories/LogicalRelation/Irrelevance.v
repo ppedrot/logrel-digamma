@@ -917,6 +917,16 @@ Corollary LRCumulative' @{i j k l i' j' k' l'} {lA}
 Proof.
   intros ->; apply LRCumulative.
 Qed.
+
+Theorem WLRCumulative@{i j k l i' j' k' l'} {lA}
+  {wl : wfLCon} {Γ : context} {A : term}
+  : WLogRel@{i j k l} lA wl Γ A ->
+    WLogRel@{i' j' k' l'} lA wl Γ A.
+Proof.
+  intros [d Hd] ; exists d.
+  intros wl' f ; now eapply LRCumulative, Hd.
+Qed.
+
 End LRIrrelevant.
 
 
