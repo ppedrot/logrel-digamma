@@ -6,7 +6,7 @@ Set Universe Polymorphism.
 
 Section Red_Ltrans.
   Context `{GenericTypingProperties}.
-  
+
 Lemma Id_Ltrans@{h i j k l} (l : TypeLevel) (wl : wfLCon) (Γ : context) (A : term)
   (IA : IdRedTy@{i j k l} wl Γ l A)
   (ih1 : forall wl' : wfLCon,

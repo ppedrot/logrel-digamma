@@ -1,6 +1,6 @@
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
 From LogRel Require Import Utils BasicAst Notations LContexts Context NormalForms Weakening GenericTyping Monad LogicalRelation.
-From LogRel.LogicalRelation Require Import Induction Irrelevance.
+From LogRel.LogicalRelation Require Import Induction Irrelevance Monotonicity.
 
 Section Split.
   Context `{GenericTypingProperties}.
@@ -89,6 +89,66 @@ Section Split.
   Proof.
     intros Htt Htf ; eapply WLRTmEqIrrelevant' ; [reflexivity | ].
     eapply TmEqSplit ; eassumption.
-  Qed. 
+  Qed.
+
+  Lemma TreeSplit@{i j k l} {wl : wfLCon} {lA Γ A}
+    (d : DTree wl) :
+    (forall wl', over_tree wl wl' d -> WLogRel@{i j k l} lA wl' Γ A) ->
+    WLogRel@{i j k l} lA wl Γ A.
+  Proof.
+    eapply (split_to_over_tree@{l}).
+    intros ; now eapply (Split).
+  Qed.
+
+  Lemma TreeEqSplit@{i j k l} {wl : wfLCon} {lA Γ A B}
+    (d : DTree wl) :
+    (forall wl', over_tree wl wl' d -> forall HA,
+          WLogRelEq@{i j k l} lA wl' Γ A B HA) ->
+    forall HA,
+    WLogRelEq@{i j k l} lA wl Γ A B HA.
+  Proof.
+    intros Hyp ; pattern wl.
+    eapply (split_to_over_tree@{l}).
+    - intros wl' n ne HAt HAf HA ; cbn in *.
+      unshelve eapply EqSplit' ; eauto.
+      all: eapply WLtrans@{k i j k l} ; [ | eassumption ].
+      all: now eapply LCon_le_step, wfLCon_le_id.
+    - intros wl' Hover HA.
+      now eapply Hyp.
+  Qed.
+
+ Lemma TreeTmSplit@{i j k l} {wl : wfLCon} {lA Γ t A}
+    (d : DTree wl) :
+    (forall wl', over_tree wl wl' d -> forall HA,
+          WLogRelTm@{i j k l} lA wl' Γ A t HA) ->
+    forall HA,
+    WLogRelTm@{i j k l} lA wl Γ A t HA.
+  Proof.
+    intros Hyp ; pattern wl.
+    eapply (split_to_over_tree@{l}).
+    - intros wl' n ne HAt HAf HA ; cbn in *.
+      unshelve eapply TmSplit' ; eauto.
+      all: eapply WLtrans@{k i j k l} ; [ | eassumption ].
+      all: now eapply LCon_le_step, wfLCon_le_id.
+    - intros wl' Hover HA.
+      now eapply Hyp.
+  Qed.
+  
+  Lemma TreeTmEqSplit@{i j k l} {wl : wfLCon} {lA Γ t u A}
+    (d : DTree wl) :
+    (forall wl', over_tree wl wl' d -> forall HA,
+          WLogRelTmEq@{i j k l} lA wl' Γ A t u HA) ->
+    forall HA,
+    WLogRelTmEq@{i j k l} lA wl Γ A t u HA.
+  Proof.
+    intros Hyp ; pattern wl.
+    eapply (split_to_over_tree@{l}).
+    - intros wl' n ne HAt HAf HA ; cbn in *.
+      unshelve eapply TmEqSplit' ; eauto.
+      all: eapply WLtrans@{k i j k l} ; [ | eassumption ].
+      all: now eapply LCon_le_step, wfLCon_le_id.
+    - intros wl' Hover HA.
+      now eapply Hyp.
+  Qed.
   
 End Split.
