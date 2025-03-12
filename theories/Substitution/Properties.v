@@ -395,7 +395,7 @@ Proof.
     * now eapply (IHwwk (Build_VAdequate _ Dad) (Build_VAdequate _ Gad)).
     * Wirrelevance.
 Defined.
-Axiom todo : False.
+
 Lemma substSEq_wk {wl Γ Δ wl' f} (ρ : Δ ≤ Γ) :
   forall (VΓ : [||-v Γ]< wl >)
   (VΔ : [||-v Δ]< wl >) 

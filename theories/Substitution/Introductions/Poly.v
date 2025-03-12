@@ -2,7 +2,7 @@ From Coq Require Import ssrbool.
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
 From LogRel Require Import Utils BasicAst Notations LContexts Context NormalForms Weakening
   GenericTyping Monad LogicalRelation Validity.
-From LogRel.LogicalRelation Require Import Escape Reflexivity Neutral Weakening Monotonicity Irrelevance.
+From LogRel.LogicalRelation Require Import Escape Reflexivity Split Neutral Weakening Monotonicity Irrelevance.
 From LogRel.Substitution Require Import Irrelevance Properties Monotonicity.
 From LogRel.Substitution.Introductions Require Import Universe.
 
@@ -124,7 +124,26 @@ Section PolyValidity.
       + now eapply wfLCon_le_id.
       + now gen_typing.
       + eapply var0; tea; now bsimpl.
-  Defined.
+  Qed.
+
+  Lemma WpolyRedId {Γ wl l F G} : WPolyRed wl Γ l F G -> W[Γ ||-<l> F]< wl > × W[Γ ,, F ||-<l> G]< wl >.
+  Proof.
+    intros [d Hd] ; split.
+    - exists d ; intros wl' Ho ; specialize (Hd _ Ho) as [?? RF ? RG].
+      rewrite <- (wk_id_ren_on Γ F).
+      eapply RF ; [now eapply wfLCon_le_id | now gen_typing].
+    - pattern wl.
+      unshelve eapply split_to_over_tree ; [exact d | | ].
+      + intros ; now eapply Split.
+      + intros wl' Ho ; specialize (Hd _ Ho) as [?? RF ? RG].
+        replace G with G[tRel 0 .: @wk1 Γ F >> tRel].
+        2: bsimpl; rewrite scons_eta'; now asimpl.
+        econstructor ; eapply RG.
+        Unshelve.
+        * now eapply wfLCon_le_id.
+        * now gen_typing.
+        * eapply var0; tea; now bsimpl.
+Qed.
 
   Lemma polyRedEqId {Γ wl l F F' G G'} (PFG : PolyRed wl Γ l F G) (RFG := polyRedId PFG) :
     PolyRedEq PFG F' G' -> [Γ ||-<l> F ≅ F' | fst RFG]< wl > × W[Γ ,, F ||-<l> G ≅ G' | snd RFG]< wl >.
@@ -149,6 +168,54 @@ Section PolyValidity.
       1: now bsimpl.
       eapply over_tree_fusion_l ; exact Hover'. 
   Qed.
+
+  Lemma WpolyRedEqId {Γ wl l F F' G G'} (PFG : WPolyRed wl Γ l F G) (RFG := WpolyRedId PFG) :
+    WPolyRedEq PFG F' G' -> W[Γ ||-<l> F ≅ F' | fst RFG]< wl > × W[Γ ,, F ||-<l> G ≅ G' | snd RFG]< wl >.
+  Proof.
+    intros [d Hd] ; split.
+    - exists (DTree_fusion _ (WPol wl Γ l F G PFG) d).
+      intros wl' HoF Hover.
+      pose proof (Ho := over_tree_fusion_l Hover).
+      pose proof (Ho' := over_tree_fusion_r Hover).
+      specialize (Hd _ Ho Ho') as [RFF' ? RGG'].
+      destruct RFG; escape. 
+      rewrite <- (wk_id_ren_on Γ F'); irrelevance0.
+      2: unshelve eapply RFF'; [ now eapply wfLCon_le_id | eapply wfc_Ltrans]. 
+      1: now apply wk_id_ren_on.
+      1: now eapply over_tree_le.
+      Wescape ; now gen_typing.      
+    - destruct RFG as [HF HG] ; cbn.
+      revert HG ; pattern wl.
+      unshelve eapply split_to_over_tree ; [exact (DTree_fusion _ (WPol wl Γ l F G PFG) d) | | ].
+      + intros ; unshelve eapply EqSplit' ; eauto.
+        1,2: eapply WLtrans ; [ | eassumption].
+        1,2: now eapply LCon_le_step, wfLCon_le_id.
+      + intros wl'  Hover HG.
+        pose proof (Ho := over_tree_fusion_l Hover).
+        pose proof (Ho' := over_tree_fusion_r Hover).
+        specialize (Hd _ Ho Ho') as [RFF' ? RGG'].
+        destruct PFG as [d' Hd'] ; cbn in *.
+        replace G' with G'[tRel 0 .: @wk1 Γ F >> tRel].
+        2: bsimpl; rewrite scons_eta'; now asimpl.
+        pose (PFG := Hd' _ Ho).
+        unshelve econstructor ; intros.
+        1: eapply DTree_fusion ; [eapply (PolyRedPack.posTree PFG (wk1 F)) | eapply posTree].
+        1,2: eapply var0 ; tea.
+        1: now bsimpl.
+        1: Wescape ; eapply wft_Ltrans ; [ now eapply over_tree_le | eassumption].
+        2: Wescape ; eapply wft_Ltrans ; [ now eapply over_tree_le | eassumption].
+        2: irrelevance0.
+        3: eapply RGG'. 
+        2: bsimpl; rewrite scons_eta'; now asimpl.
+        Unshelve.
+        5: now eapply wk1.
+        1: now bsimpl.
+        1: eapply over_tree_fusion_r ; exact Hover'.
+        1,3: now eapply wfLCon_le_id.
+        1,2: eapply wfc_Ltrans ; [now eapply over_tree_le | Wescape ; now gen_typing].
+        eapply over_tree_fusion_l ; exact Hover'. 
+  Qed.
+    
 
   Lemma polyRedSubst {wl Γ l A B t} (PAB : PolyRed wl Γ l A B) 
     (Rt : forall Δ wl' a (ρ : Δ ≤ Γ) (f : wl' ≤ε wl) (wfΔ : [|-Δ]< wl' >), 
