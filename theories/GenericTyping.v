@@ -1452,10 +1452,31 @@ Section GenericConsequences.
   intros * []; constructor; now eapply convneu_whne.
   Qed.
 
+  Lemma isWfFun_Ltrans {wl wl' Γ A B t} (f : wl' ≤ε wl) :
+    isWfFun wl Γ A B t -> isWfFun wl' Γ A B t.
+  Proof.
+    intros [] ; constructor.
+    - now eapply wft_Ltrans.
+    - now eapply convty_Ltrans.
+    - now eapply ty_Ltrans.
+    - now eapply ty_Ltrans.
+    - now eapply convneu_Ltrans.
+  Qed.            
+
   Lemma isWfPair_isPair : forall l Γ A B t, isWfPair l Γ A B t -> isPair t.
   Proof.
   intros * []; constructor; now eapply convneu_whne.
   Qed.
+
+  Lemma isWfPair_Ltrans {wl wl' Γ A B t} (f : wl' ≤ε wl) :
+    isWfPair wl Γ A B t -> isWfPair wl' Γ A B t.
+  Proof.
+    intros [] ; constructor.
+    all: try now eapply wft_Ltrans.
+    1,2,3,5 : now eapply convty_Ltrans.
+    1,2: now eapply ty_Ltrans.
+    now eapply convneu_Ltrans.
+  Qed.  
 
 End GenericConsequences.
 

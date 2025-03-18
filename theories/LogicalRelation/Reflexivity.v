@@ -19,6 +19,7 @@ Section Reflexivities.
     all: cbn in * ; eassumption.
     (* econstructor; tea; now eapply escapeEqTerm. *)
   Qed.
+  
 
   Definition WreflLRTyEq {l wl Γ A} (lr : W[ Γ ||-< l > A ]< wl > ) :
     W[ Γ ||-< l > A ≅ A | lr ]< wl >.
@@ -119,7 +120,104 @@ Section Reflexivities.
       all: cbn; now eauto.
     - intros; now eapply reflIdRedTmEq.
   Qed.
+(*
+  Definition reflLRTmEq_inv@{h i j k l} {l wl Γ A} (lr : [ LogRel@{i j k l} l | Γ ||- A ]< wl > ) :
+    forall t,
+      [ Γ ||-<l> t ≅ t : A | lr ]< wl > ->
+      [ Γ ||-<l> t : A | lr ]< wl >.
+  Proof.
+    pattern l, wl, Γ, A, lr; eapply LR_rect_TyUr; clear l wl Γ A lr; intros l wl Γ A.
+    - intros h t [? ? ? ? Rt%RedTyRecFwd@{j k h i k}] ; cbn in *.
+      (* Need an additional universe level h < i *)
+      destruct redL.
+      now unshelve econstructor.
+    - intros ? t [???[]].
+      econstructor ; cbn in *.
+      1: eassumption.
+      now eapply lrefl.
+    - intros ??? t [].
+      unshelve econstructor ; cbn in *.
+      4: now eapply (PiRedTm.red redL).
+      1,2: shelve. 
+      1: now eapply (PiRedTm.refl redL).
+      1: now eapply (PiRedTm.isfun redL).
+      + cbn in *.
+        intros.
+        eapply (PiRedTm.app redL) ; eassumption.
+      + cbn in * ; intros.
+        eapply (PiRedTm.eq redL) ; eassumption.
+    - intros NA t Nt ; cbn in *.
+      epose (test := NatRedEqInduction _ _ _ NA
+                       (fun t u Htu => [Γ ||-Nat t : A | NA ]< wl >)
+                       (fun t u Htu => NatProp NA t)).
+      cbn in *.
+      eapply test.
+      5: eassumption.
+      2: now constructor.
+      2: intros ; now constructor.
+      2:{ intros. constructor ; destruct r.
+          
+          Search hyp: Notations.conv_neu_conv.
+          2: now eapply lrefl.
+          destruct Nt.
+          Print TermRedWf.
+          
+      ; destruct Nt.
+      econstructor.
+      + eassumption.
+      + etransitivity ; [ | eassumption].
+        now symmetry.
+      + About NatRedEqInduction.
+        pose (test := NatRedEqInduction _ _ _ NA).
+        
+        
+        Print NatPropEq.
+        refine (fix f := match prop with
+                              | zeroRed => _
+                              | succReq n n' Hnn' => f' Hnn'
+                              | neReq _ _ => _
+                              end
+                  with f' := match Hnn' with
+                               | Build_NatRedTmEq _ _ _ _ => _
+                                  end
+                ).
+               ). 
+       
 
+        
+        eapply X0.
+        replace (PiRedTm.nf redL) with (PiRedTm.nf redR) at 2.
+        1: now eapply eqApp.
+        eapply whredtm_det.
+        all: econstructor.
+        2,4: destruct redL, redR ; cbn in *.
+        2,3: inversion isfun ; inversion isfun0 ; subst ; constructor.
+        2-5: now eapply convneu_whne.
+        * now eapply (PiRedTm.red redR).
+        * now eapply (PiRedTm.red redL).
+      + cbn in *.
+        intros.
+        
+          destruct redR ; cbn in *.
+          inversion isfun ; subst ; constructor.
+          now eapply convneu_whne.
+        
+      destruct redL ; cbn in *.
+      
+      1-2: now econstructor.
+      + intros ; now eapply eqTree.
+      + 
+      all: cbn; now eauto.
+    - intros; now apply reflNatRedTmEq.
+    - intros; now apply reflBoolRedTmEq.
+    - intros; now apply reflEmptyRedTmEq.
+    - intros ??? t [].
+      unshelve econstructor ; cbn in *.
+      1-2: now econstructor.
+      all: cbn; now eauto.
+    - intros; now eapply reflIdRedTmEq.
+  Qed.
+*)
   Definition WreflLRTmEq@{h i j k l} {l wl Γ A}
     (lr : WLogRel@{i j k l} l wl Γ A ) :
     forall t,

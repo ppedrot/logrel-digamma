@@ -222,6 +222,25 @@ Proof.
       eassumption.
 Defined.
 
+Lemma subst_Ltrans' {Γ Δ σ wl wl' wl''}
+  {f: wl' ≤ε wl}
+  (f': wl'' ≤ε wl')
+  {VΓ : [||-v Γ ]< wl >}
+  (wfΔ' : [ |-[ ta ] Δ ]< wl'' >) : 
+  [VΓ | Δ ||-v σ : Γ | wfΔ' | (f' •ε f) ]< wl > ->
+  [VPack_Ltrans f VΓ | Δ ||-v σ : Γ | wfΔ' | f' ]< wl' >.
+Proof.
+  revert σ.
+  pattern Γ, VΓ.
+  eapply validity_rect.
+  - intros * ; cbn. rewrite Hsub ; trivial.
+  - intros * IH σ ; cbn ; rewrite Hsub.
+    intros [red eq] ; unshelve econstructor.
+    + eapply IH ; eassumption.
+    + cbn in * ; Wirrelevance0 ; [reflexivity | ].
+      eassumption.
+Defined.
+
 Lemma eqsubst_Ltrans {Γ Δ σ σ' wl wl' wl''}
   (f: wl' ≤ε wl)
   (f': wl'' ≤ε wl')
@@ -247,6 +266,33 @@ Proof.
     + cbn in * ; Wirrelevance0 ; [reflexivity | ].
       rewrite Hext in Vσσ' ; destruct Vσσ'.
       unshelve eapply WTmEq_Ltrans ; [ | eassumption | | eassumption].
+Qed.
+
+Lemma eqsubst_Ltrans' {Γ Δ σ σ' wl wl' wl''}
+  (f: wl' ≤ε wl)
+  (f': wl'' ≤ε wl')
+  (VΓ : [||-v Γ ]< wl >)
+  (wfΔ : [ |-[ ta ] Δ ]< wl' >)
+  (wfΔ' : [ |-[ ta ] Δ ]< wl'' >)
+  (Vσ: [VΓ | Δ ||-v σ : Γ | wfΔ' | (f' •ε f) ]< wl >) :
+  [VΓ | Δ ||-v σ ≅ σ' : Γ | wfΔ' | Vσ | (f' •ε f) ]< wl > ->
+  [VPack_Ltrans f VΓ | Δ ||-v σ ≅ σ' : Γ | wfΔ' | subst_Ltrans' f' wfΔ' Vσ | f' ]< wl' >.
+Proof.
+  revert σ σ' Vσ.
+  pattern Γ, VΓ.
+  eapply validity_rect.
+  - intros * ? ; cbn in *.
+    erewrite (Hext Δ wl'' σ σ' (f' •ε f) wfΔ' _) ; now constructor.
+  - intros * IH σ σ' Vσ Vσσ'.
+    cbn.
+    erewrite (Hext Δ wl'' σ σ' (f' •ε f) wfΔ').
+    econstructor.
+    + cbn in * ; eapply irrelevanceSubstEq.      
+      eapply IH.
+      rewrite Hext in Vσσ' ; destruct Vσσ' ; eassumption.
+    + cbn in * ; Wirrelevance0 ; [reflexivity | ].
+      rewrite Hext in Vσσ' ; destruct Vσσ'.
+      eassumption.
 Qed.
       
 End Monotonicity.
