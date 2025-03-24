@@ -1,6 +1,6 @@
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
-From LogRel Require Import Utils BasicAst Notations Context NormalForms Weakening
-  GenericTyping LogicalRelation Validity.
+From LogRel Require Import Utils BasicAst Notations LContexts Context NormalForms Weakening
+  GenericTyping Monad LogicalRelation Validity.
 From LogRel.LogicalRelation Require Import Escape Reflexivity Neutral Weakening Irrelevance.
 From LogRel.Substitution Require Import Irrelevance Properties Conversion.
 From LogRel.Substitution.Introductions Require Import Universe Pi Application Lambda Var.
@@ -11,24 +11,24 @@ Section SimpleArrValidity.
 
   Context `{GenericTypingProperties}.
 
-  Lemma simpleArrValid {l Γ F G} (VΓ : [||-v Γ])
-    (VF : [Γ ||-v< l > F | VΓ ])
-    (VG : [Γ ||-v< l > G | VΓ]) :
-    [Γ ||-v<l> arr F G | VΓ].
+  Lemma simpleArrValid {l wl Γ F G} (VΓ : [||-v Γ]< wl >)
+    (VF : [Γ ||-v< l > F | VΓ ]< wl >)
+    (VG : [Γ ||-v< l > G | VΓ]< wl >) :
+    [Γ ||-v<l> arr F G | VΓ]< wl >.
   Proof.
     unshelve eapply PiValid; tea.
     replace G⟨↑⟩ with G⟨@wk1 Γ F⟩ by now bsimpl.
     now eapply wk1ValidTy.
   Qed.
 
-  Lemma simpleArrCongValid {l Γ F F' G G'} (VΓ : [||-v Γ])
-    (VF : [Γ ||-v< l > F | VΓ ])
-    (VF' : [Γ ||-v< l > F' | VΓ ])
-    (VeqF : [Γ ||-v< l > F ≅ F' | VΓ | VF])
-    (VG : [Γ ||-v< l > G | VΓ ])
-    (VG' : [Γ ||-v< l > G' | VΓ ])
-    (VeqG : [Γ ||-v< l > G ≅ G' | VΓ | VG]) :
-    [Γ ||-v<l> arr F G ≅ arr F' G' | VΓ | simpleArrValid _ VF VG].
+  Lemma simpleArrCongValid {l wl Γ F F' G G'} (VΓ : [||-v Γ]< wl >)
+    (VF : [Γ ||-v< l > F | VΓ ]< wl >)
+    (VF' : [Γ ||-v< l > F' | VΓ ]< wl >)
+    (VeqF : [Γ ||-v< l > F ≅ F' | VΓ | VF]< wl >)
+    (VG : [Γ ||-v< l > G | VΓ ]< wl >)
+    (VG' : [Γ ||-v< l > G' | VΓ ]< wl >)
+    (VeqG : [Γ ||-v< l > G ≅ G' | VΓ | VG]< wl >) :
+    [Γ ||-v<l> arr F G ≅ arr F' G' | VΓ | simpleArrValid _ VF VG]< wl >.
   Proof.
     eapply irrelevanceTyEq.
     unshelve eapply PiCong; tea.
@@ -43,14 +43,14 @@ Section SimpleArrValidity.
     Unshelve. 2: tea.
   Qed.
 
-  Lemma simple_appValid {Γ t u F G l}
-    (VΓ : [||-v Γ])
-    {VF : [Γ ||-v<l> F | VΓ]}
-    (VG : [Γ ||-v<l> G | VΓ])
-    (VΠ : [Γ ||-v<l> arr F G | VΓ])
-    (Vt : [Γ ||-v<l> t : arr F G | _ | VΠ])
-    (Vu : [Γ ||-v<l> u : F | _ | VF]) :
-    [Γ ||-v<l> tApp t u : G| _ | VG].
+  Lemma simple_appValid {wl Γ t u F G l}
+    (VΓ : [||-v Γ]< wl >)
+    {VF : [Γ ||-v<l> F | VΓ]< wl >}
+    (VG : [Γ ||-v<l> G | VΓ]< wl >)
+    (VΠ : [Γ ||-v<l> arr F G | VΓ]< wl >)
+    (Vt : [Γ ||-v<l> t : arr F G | _ | VΠ]< wl >)
+    (Vu : [Γ ||-v<l> u : F | _ | VF]< wl >) :
+    [Γ ||-v<l> tApp t u : G| _ | VG]< wl >.
   Proof.
     eapply irrelevanceTm'.
     2: eapply appValid; tea.
@@ -58,11 +58,11 @@ Section SimpleArrValidity.
   Unshelve. all: tea.
   Qed.
 
-  Lemma simple_idValid {Γ A l}
-    (VΓ : [||-v Γ])
-    {VF : [Γ ||-v<l> A | VΓ]}
-    (VΠ : [Γ ||-v<l> arr A A | VΓ]) :
-    [Γ ||-v<l> idterm A : arr A A | _ | VΠ].
+  Lemma simple_idValid {wl Γ A l}
+    (VΓ : [||-v Γ]< wl >)
+    {VF : [Γ ||-v<l> A | VΓ]< wl >}
+    (VΠ : [Γ ||-v<l> arr A A | VΓ]< wl >) :
+    [Γ ||-v<l> idterm A : arr A A | _ | VΠ]< wl >.
   Proof.
     eapply irrelevanceTm'.
     2: unshelve eapply lamValid.
@@ -71,17 +71,17 @@ Section SimpleArrValidity.
     - tea.
   Qed.
 
-  Lemma simple_compValid {Γ A B C f g l}
-    (VΓ : [||-v Γ])
-    {VA : [Γ ||-v<l> A | VΓ]}
-    (VB : [Γ ||-v<l> B | VΓ])
-    (VC : [Γ ||-v<l> C | VΓ])
-    (VAB : [Γ ||-v<l> arr A B | VΓ])
-    (VBC : [Γ ||-v<l> arr B C | VΓ])
-    (VAC : [Γ ||-v<l> arr A C | VΓ])
-    (Vf : [Γ ||-v<l> f : arr A B | _ | VAB])
-    (Vg : [Γ ||-v<l> g : arr B C | _ | VBC]) :
-    [Γ ||-v<l> comp A g f : arr A C | _ | VAC].
+  Lemma simple_compValid {wl Γ A B C f g l}
+    (VΓ : [||-v Γ]< wl >)
+    {VA : [Γ ||-v<l> A | VΓ]< wl >}
+    (VB : [Γ ||-v<l> B | VΓ]< wl >)
+    (VC : [Γ ||-v<l> C | VΓ]< wl >)
+    (VAB : [Γ ||-v<l> arr A B | VΓ]< wl >)
+    (VBC : [Γ ||-v<l> arr B C | VΓ]< wl >)
+    (VAC : [Γ ||-v<l> arr A C | VΓ]< wl >)
+    (Vf : [Γ ||-v<l> f : arr A B | _ | VAB]< wl >)
+    (Vg : [Γ ||-v<l> g : arr B C | _ | VBC]< wl >) :
+    [Γ ||-v<l> comp A g f : arr A C | _ | VAC]< wl >.
   Proof.
     eapply irrelevanceTm'.
     2: unshelve eapply lamValid.

@@ -835,6 +835,14 @@ Proof.
   intros wl' f f' ; now eapply Tm_Ltrans.
 Defined.
 
+Definition TmLogtoW'@{h i j k l} {l : TypeLevel} {wl Γ t A}
+  {RA : [ LogRel@{i j k l} l | Γ ||- A ]< wl >}
+  (Rt : [ LogRel@{i j k l} l | Γ ||- t : A | RA ]< wl >)
+  (WRA : WLogRel@{i j k l} l wl Γ A) :
+  WLogRelTm@{i j k l} l wl Γ t A WRA.
+Proof.
+  Wirrelevance0 ; [reflexivity | now eapply TmLogtoW@{h i j k l}].
+Defined.
 
 Definition EqLogtoW@{h i j k l} {l : TypeLevel} {wl Γ A B}
   (RA : [ LogRel@{i j k l} l | Γ ||- A ]< wl >)
@@ -843,6 +851,15 @@ Definition EqLogtoW@{h i j k l} {l : TypeLevel} {wl Γ A B}
 Proof.
   exists (leaf wl).
   intros wl' f f' ; now eapply Eq_Ltrans.
+Defined.
+
+Definition EqLogtoW'@{h i j k l} {l : TypeLevel} {wl Γ A B}
+  {RA : [ LogRel@{i j k l} l | Γ ||- A ]< wl >}
+  (Rt : [ LogRel@{i j k l} l | Γ ||- A ≅ B | RA ]< wl >)
+  (WRA : WLogRel@{i j k l} l wl Γ A) :
+  WLogRelEq@{i j k l} l wl Γ A B WRA.
+Proof.
+  Wirrelevance0 ; [reflexivity | now eapply EqLogtoW@{h i j k l}].
 Defined.
 
 
@@ -854,7 +871,17 @@ Proof.
   exists (leaf wl).
   intros wl' f f' ; now eapply TmEq_Ltrans.
 Defined.
-  
+
+Definition TmEqLogtoW'@{h i j k l} {l : TypeLevel} {wl Γ t u A}
+  {RA : [ LogRel@{i j k l} l | Γ ||- A ]< wl >}
+  (Rt : [ LogRel@{i j k l} l | Γ ||- t ≅ u : A | RA ]< wl >)
+  (WRA : WLogRel@{i j k l} l wl Γ A) :
+  WLogRelTmEq@{i j k l} l wl Γ t u A WRA.
+Proof.
+  Wirrelevance0 ; [reflexivity | now eapply TmEqLogtoW@{h i j k l}].
+Defined.
+
+
 End Injection.
 
 Section Weakening_Ltrans.

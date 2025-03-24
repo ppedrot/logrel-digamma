@@ -78,7 +78,25 @@ Record complete {l wl Γ A} (RA : [Γ ||-<l> A]< wl >) := {
     [Γ |- n' : A]< wl > ->
     [Γ |- n ~ n' : A]< wl > ->
     [Γ ||-<l> n : A | RA]< wl > × [Γ ||-<l> n ≅ n' : A| RA]< wl >;
-}.
+  }.
+
+Definition Wcomplete {l wl Γ A} (RA : W[Γ ||-<l> A]< wl >) :=
+  forall wl' (Ho : over_tree wl wl' (WT _ RA)),
+             complete (WRed _ RA wl' Ho).
+
+Lemma Wreflect {l wl Γ A} {RA : W[Γ ||-<l> A]< wl >} (Hyp : Wcomplete RA) :
+  forall n n',
+    [Γ |- n : A]< wl > ->
+    [Γ |- n' : A]< wl > ->
+    [Γ |- n ~ n' : A]< wl > ->
+    W[Γ ||-<l> n : A | RA]< wl > × W[Γ ||-<l> n ≅ n' : A| RA]< wl >.
+Proof.
+  intros n n' Hn Hn' Hnn' ; split ; exists (WT _ RA).
+  all: intros wl' Ho Ho' ; pose (f := over_tree_le Ho).
+  all: eapply Hyp.
+  1,2,4,5: eapply ty_Ltrans ; eassumption.
+  all: now eapply convneu_Ltrans.
+Qed.  
 
 Lemma complete_reflect_simpl {l wl Γ A} (RA : [Γ ||-<l> A]< wl >) (c : complete RA) :
   forall n, [Γ |- n : A]< wl > -> [Γ |- n ~ n : A]< wl > -> [Γ ||-<l> n : A | RA]< wl >.
@@ -616,12 +634,18 @@ revert l wl Γ A RA; eapply LR_rect_TyUr; cbn; intros.
 - now apply complete_Id.
 Qed.
 
+Lemma Wcompleteness {l wl Γ A} (RA : W[Γ ||-<l> A]< wl >) : Wcomplete RA.
+Proof.
+  intros wl' Ho.
+  now eapply completeness.
+Qed.
+
 Lemma neuTerm {l wl Γ A} (RA : [Γ ||-<l> A]< wl >) {n} :
   [Γ |- n : A]< wl > ->
   [Γ |- n ~ n : A]< wl > ->
   [Γ ||-<l> n : A | RA]< wl >.
 Proof.
-  intros.  now eapply completeness.
+  intros. now eapply completeness.
 Qed.
 
 Lemma neuTermEq {l wl Γ A} (RA : [Γ ||-<l> A]< wl >) {n n'} :

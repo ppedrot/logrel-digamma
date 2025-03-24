@@ -477,6 +477,7 @@ Proof.
   - split; apply NatIrrelevanceTmEq.
 Qed.
 
+
 Section EmptyIrrelevant.
   Universe i j k l i' j' k' l'.
 
