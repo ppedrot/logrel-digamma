@@ -439,7 +439,6 @@ Section NatElimValid.
     (VPz := substS VP (zeroValid VΓ))
     (Vhz : [Γ ||-v<l> hz : P[tZero..] | VΓ | VPz]< wl >) 
     (Vhs : [Γ ||-v<l> hs : _ | VΓ | elimSuccHypTyValid]< wl >).
-Axiom todo: False.
 
   Lemma natElimValid {n}
     (Vn : [Γ ||-v<l> n : tNat | VΓ | VN]< wl >)
