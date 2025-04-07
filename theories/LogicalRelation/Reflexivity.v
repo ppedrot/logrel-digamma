@@ -120,7 +120,7 @@ Section Reflexivities.
       all: cbn; now eauto.
     - intros; now eapply reflIdRedTmEq.
   Qed.
-(*
+
   Definition reflLRTmEq_inv@{h i j k l} {l wl Γ A} (lr : [ LogRel@{i j k l} l | Γ ||- A ]< wl > ) :
     forall t,
       [ Γ ||-<l> t ≅ t : A | lr ]< wl > ->
@@ -128,7 +128,6 @@ Section Reflexivities.
   Proof.
     pattern l, wl, Γ, A, lr; eapply LR_rect_TyUr; clear l wl Γ A lr; intros l wl Γ A.
     - intros h t [? ? ? ? Rt%RedTyRecFwd@{j k h i k}] ; cbn in *.
-      (* Need an additional universe level h < i *)
       destruct redL.
       now unshelve econstructor.
     - intros ? t [???[]].
@@ -147,77 +146,61 @@ Section Reflexivities.
       + cbn in * ; intros.
         eapply (PiRedTm.eq redL) ; eassumption.
     - intros NA t Nt ; cbn in *.
+      assert (Hyp : Notations.typing wl Γ tNat t).
+      { destruct Nt.
+        now eapply tmr_wf_l.
+      }
       epose (test := NatRedEqInduction _ _ _ NA
-                       (fun t u Htu => [Γ ||-Nat t : A | NA ]< wl >)
-                       (fun t u Htu => NatProp NA t)).
+                       (fun t u Htu =>  [Γ ||-Nat t : A | NA ]< wl >)
+                       (fun t u Htu => Notations.typing wl Γ tNat t -> NatProp NA t)).
       cbn in *.
-      eapply test.
-      5: eassumption.
+      eapply test ; [ .. | eassumption] ; clear t Nt Hyp test.
       2: now constructor.
       2: intros ; now constructor.
-      2:{ intros. constructor ; destruct r.
-          
-          Search hyp: Notations.conv_neu_conv.
-          2: now eapply lrefl.
-          destruct Nt.
-          Print TermRedWf.
-          
-      ; destruct Nt.
+      2:{ intros.
+          destruct r ; do 2 econstructor ; [assumption | ].
+          etransitivity ; [ eassumption | ].
+          now symmetry.
+      }
+      intros.
       econstructor.
       + eassumption.
-      + etransitivity ; [ | eassumption].
+      + etransitivity ; [ eassumption | ].
         now symmetry.
-      + About NatRedEqInduction.
-        pose (test := NatRedEqInduction _ _ _ NA).
-        
-        
-        Print NatPropEq.
-        refine (fix f := match prop with
-                              | zeroRed => _
-                              | succReq n n' Hnn' => f' Hnn'
-                              | neReq _ _ => _
-                              end
-                  with f' := match Hnn' with
-                               | Build_NatRedTmEq _ _ _ _ => _
-                                  end
-                ).
-               ). 
-       
-
-        
-        eapply X0.
-        replace (PiRedTm.nf redL) with (PiRedTm.nf redR) at 2.
-        1: now eapply eqApp.
-        eapply whredtm_det.
-        all: econstructor.
-        2,4: destruct redL, redR ; cbn in *.
-        2,3: inversion isfun ; inversion isfun0 ; subst ; constructor.
-        2-5: now eapply convneu_whne.
-        * now eapply (PiRedTm.red redR).
-        * now eapply (PiRedTm.red redL).
-      + cbn in *.
-        intros.
-        
-          destruct redR ; cbn in *.
-          inversion isfun ; subst ; constructor.
-          now eapply convneu_whne.
-        
-      destruct redL ; cbn in *.
-      
-      1-2: now econstructor.
-      + intros ; now eapply eqTree.
-      + 
-      all: cbn; now eauto.
-    - intros; now apply reflNatRedTmEq.
-    - intros; now apply reflBoolRedTmEq.
-    - intros; now apply reflEmptyRedTmEq.
-    - intros ??? t [].
-      unshelve econstructor ; cbn in *.
-      1-2: now econstructor.
-      all: cbn; now eauto.
-    - intros; now eapply reflIdRedTmEq.
+      + eapply H10.
+        now destruct redL.
+    - intros NA t [].
+      induction prop ; cbn.
+      all: econstructor ; [eassumption | ..] ; eauto.
+      + now constructor.
+      + now constructor.
+      + etransitivity ; [ | eassumption ].
+        now symmetry.
+      + do 2 econstructor.
+        * now destruct redR.
+        * destruct r ; etransitivity ; [ | eassumption].
+          now symmetry.
+    - intros NA t [].
+      induction prop.
+      econstructor ; [eassumption | | ].
+      + etransitivity ; [ | eassumption ].
+        now symmetry.
+      + do 2 econstructor.
+        * now destruct redR.
+        * destruct r ; etransitivity ; [ | eassumption].
+          now symmetry.
+    - intros ? Hshp Hcod t [redL redR] ; assumption.
+    - intros IA Hred Hkry t [] ; econstructor ; cbn in *.
+      + eassumption.
+      + etransitivity ; [now symmetry | eassumption].
+      + induction prop.
+        * econstructor ; eauto.
+        * destruct r ; do 2 econstructor.
+          --  now destruct redR.
+          -- etransitivity ; [now symmetry | assumption].
   Qed.
-*)
+
+
   Definition WreflLRTmEq@{h i j k l} {l wl Γ A}
     (lr : WLogRel@{i j k l} l wl Γ A ) :
     forall t,
@@ -226,6 +209,17 @@ Section Reflexivities.
   Proof.
     intros t [WTt WRedt] ; exists (WTt).
     intros wl' Hover Hover' ; eapply reflLRTmEq@{h i j k l}.
+    now eapply WRedt.
+  Defined.
+
+  Definition WreflLRTmEq_inv@{h i j k l} {l wl Γ A}
+    (lr : WLogRel@{i j k l} l wl Γ A ) :
+    forall t,
+      W[ Γ ||-<l> t ≅ t : A | lr ]< wl > ->
+      W[ Γ ||-<l> t : A | lr ]< wl >.
+  Proof.
+    intros t [WTt WRedt] ; exists (WTt).
+    intros wl' Hover Hover' ; eapply reflLRTmEq_inv@{h i j k l}.
     now eapply WRedt.
   Defined.
   

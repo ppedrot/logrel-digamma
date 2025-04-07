@@ -254,7 +254,7 @@ Section NatElimRed.
         cbn; gen_typing.
     - intros. 
       eapply WredSubstTerm.
-      2: eapply redtm_natElimZero; tea.
+      2: unshelve eapply redtm_natElimZero ; tea.
       Wirrelevance.
     - intros n Rn ih RSucc; change [Γ ||-<l> n : tNat | RN]< wl > in Rn.
       eapply WredSubstTerm.

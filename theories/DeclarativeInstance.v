@@ -711,6 +711,19 @@ Module DeclarativeTypingProperties.
     + repeat (constructor; tea).
     + now eapply redalg_boolElim.
     + constructor; first [eassumption|now apply TermRefl|now apply TypeRefl].
+  - intros * Hred ; split.
+    + econstructor.
+      induction n.
+      * cbn ; now destruct Hred.
+      * cbn ; now constructor.
+    + destruct Hred as [_ red _].
+      induction red ; [now constructor | ].
+      econstructor ; [ | eassumption].
+      now eapply alphaSubst.
+    + destruct Hred.
+      constructor.
+      induction n ; [ now auto | cbn].
+      now constructor.      
   - intros * Hg Hin ; split.
     + econstructor.
       clear Hin b.

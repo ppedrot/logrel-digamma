@@ -30,8 +30,8 @@ Inductive OneRedAlg  {l : wfLCon} : term -> term -> Type :=
     [ tBoolElim P ht hf tTrue ⤳ ht ]< l >
 | boolElimFalse {P ht hf} :
   [ tBoolElim P ht hf tFalse ⤳ hf ]< l >
-| alphaSubst {n n'} :
-  [ n ⤳ n' ]< l > -> [ tAlpha n ⤳ tAlpha n' ]< l >
+| alphaSubst {n n' k} :
+  [ n ⤳ n' ]< l > -> [ tAlpha (nSucc k n) ⤳ tAlpha (nSucc k n') ]< l >
 | alphaRed {n b} : in_LCon (pi1 l) n b ->
                    [ tAlpha (nat_to_term n) ⤳ bool_to_term b]< l >   
 | fstSubst {p p'} :
@@ -82,6 +82,8 @@ Inductive RedClosureAlg {l} : term -> term -> Type :=
 Ltac inv_whne :=
   match goal with [ H : whne _ |- _ ] => inversion H end.
 
+
+
 Lemma whne_nored {l} n u :
   whne n -> [n ⤳ u]< l > -> False.
 Proof.
@@ -90,7 +92,10 @@ Proof.
   all: inversion ne ; subst ; clear ne.
   2: auto.
   all: try now inv_whne.
-  1: induction n0 ; auto ;  now inversion red.
+  1:{ eapply nSuccneinj in H ; auto ; subst.
+      destruct (n0 - k) ; cbn in * ; [now apply IHred | ].
+      now inversion red.
+  }
   clear i ; revert n0 H ; induction n ; cbn in * ; intros.
   - destruct n0.
     * inversion H0 ; subst ; simpl in H ;  rewrite H in H0 ; now inversion H0.
@@ -108,7 +113,8 @@ Proof.
   induction red in nf |- *.
   all: try (inversion nf; subst; inv_whne; subst; apply IHred; now constructor).
   all: inversion nf; subst; inv_whne; subst; try now inv_whne.
-  - apply IHred. now eapply containsnewhnf.
+  - eapply nSuccneinj in H0 ; auto ; subst.
+    destruct (n0 - k) ; cbn in * ; now apply IHred ; constructor.
   - now eapply containsnenattoterm.
 Qed.
 
@@ -150,12 +156,34 @@ Proof.
   - inversion red'; try reflexivity; subst.
     exfalso; eapply whnf_nored; tea; constructor.
   - inversion red' ; subst.
-    + now rewrite (IHred n'0 H0).
-    + exfalso ; eapply whnf_nored ; tea.
-      now eapply whnfnattoterm.
+    + destruct (nSucc_cases H) as [ [e | e] | e] ; subst.
+      * eapply IHred in H0 ; subst.
+        apply nSucc_injnat in H ; now subst.
+      * remember (k - k0) as j ; destruct j ; cbn in *.
+        -- apply IHred in H0 ; subst.
+           apply nSucc_injnat in H ; now subst.
+        -- now inversion H0.
+      * remember (k0 - k) as j ; destruct j ; cbn in *.
+        -- apply IHred in H0 ; subst.
+           apply nSucc_injnat in H ; now subst.
+        -- now inversion red.
+    + exfalso ; eapply whnf_nored ; [ | exact red].
+      unfold nat_to_term in H ; destruct (nSucc_cases H) as [ [e | e] | e] ; subst.
+      * now constructor.
+      * remember (k - n0) as j ; destruct j ; cbn in * ; subst.
+        -- now constructor.
+        -- now inversion e.
+      * remember (n0 - k) as j ; destruct j ; cbn in * ; subst.
+        all: now constructor.
   - inversion red' ; subst.
-    + exfalso ; eapply whnf_nored ; tea.
-      now eapply whnfnattoterm.
+    + exfalso ; eapply whnf_nored ; [ | exact H0].
+      unfold nat_to_term in H ; destruct (nSucc_cases H) as [ [e | e] | e] ; subst.
+      * now constructor.
+      * remember (n - k) as j ; destruct j ; cbn in * ; subst.
+        all: now constructor.
+      * remember (k - n) as j ; destruct j ; cbn in * ; subst.
+        -- now constructor.
+        -- now inversion e.
     + erewrite (uniqueinLCon (pi2 l) i) ; trivial.
       rewrite (nattoterminj H) in H0 ; assumption.
   - inversion red'; subst; clear red'.
@@ -224,13 +252,15 @@ Lemma oredalg_wk {l} (ρ : nat -> nat) (t u : term) :
 Proof.
   intros Hred.
   induction Hred in ρ |- *.
-  2-10, 12-17: cbn; asimpl; try now econstructor.
+  2-9, 12-17: cbn; asimpl; now econstructor.
   - cbn ; asimpl.
     evar (t' : term).
     replace (subst_term _ t) with t'.
     all: subst t'.
     1: econstructor.
     now asimpl.
+  - cbn ; do 2 rewrite nSucc_ren.
+    now constructor.
   - enough (Heqb : (bool_to_term b)⟨ρ⟩ = bool_to_term b) ; [ | now induction b].
     cbn ; rewrite Heqb ; clear Heqb.
     enough (Heqn : (nat_to_term n)⟨ρ⟩ = nat_to_term n) ; [ | clear ; induction n ; auto].

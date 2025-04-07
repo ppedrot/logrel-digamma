@@ -580,6 +580,9 @@ Section GenericTyping.
         [Γ |- hf : P[tFalse..]]< l > ->
         [ Γ |- b ⤳* b' : tBool ]< l > ->
         [Γ |- tBoolElim P ht hf b ⤳* tBoolElim P ht hf b' : P[b..]]< l > ;
+    redtm_alphaSubst {l Γ t u n} :
+      [ Γ |- t ⤳* u : tNat ]< l > ->
+      [ Γ |- tAlpha (nSucc n t) ⤳* tAlpha (nSucc n u) : tBool ]< l > ;
     redtm_alpha {l Γ n b} :
         [ |- Γ ]< l > ->
         in_LCon (pi1 l) n b ->

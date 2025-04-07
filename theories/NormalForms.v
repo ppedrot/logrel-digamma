@@ -90,6 +90,50 @@ Proof.
   induction t  ; cbn ; now econstructor.
 Qed.
 
+Lemma nSucc_cases {k k' t t'} :
+  nSucc k t = nSucc k' t' ->
+  (t = t') + (t = nSucc (k' - k) t') + (t' = nSucc (k - k') t).
+Proof.
+  revert k' t t' ; induction k ; intros k' t t' Heq ; cbn in *.
+  - left ; right.
+    now rewrite PeanoNat.Nat.sub_0_r.
+  - destruct k' ; cbn in *.
+    + right ; now symmetry.
+    + eapply IHk.
+      now inversion Heq.
+Qed.
+
+Lemma nSucc_injnat {k k' t} :
+  nSucc k t = nSucc k' t -> k = k'.
+Proof.
+  revert k' t ; induction k ; intros ; cbn in *.
+  - destruct k' ; [reflexivity | cbn in *].
+    induction t ; cbn in * ; inversion H.
+    enough (Hyp : nSucc k' (tSucc t) = tSucc (nSucc k' t)).
+    { rewrite Hyp in H1 ; now apply IHt. }
+    clear ; induction k' ; [reflexivity | cbn].
+    now rewrite IHk'.
+  - destruct k' ; cbn in *.
+    2: f_equal ; eapply IHk ; now inversion H.
+    induction t ; cbn in * ; inversion H.
+    enough (Hyp : nSucc k (tSucc t) = tSucc (nSucc k t)).
+    { rewrite Hyp in H1 ; now apply IHt. }
+    clear ; induction k ; [reflexivity | cbn].
+    now rewrite IHk.
+Qed.
+
+Lemma nSuccneinj {k k' t t'} :
+  whne t -> nSucc k t = nSucc k' t' -> t' = nSucc (k - k') t.
+Proof.
+  revert k' t t' ; induction k ; intros k' t t' Hne Heq.
+  - destruct k' ; cbn in * ; [now auto | ].
+    subst ; now inversion Hne.
+  - destruct k' ; cbn in * ; [now auto | ].
+    inversion Heq.
+    now eapply IHk.
+Qed.  
+  
+
 #[global] Hint Resolve neSort nePi neLambda : gen_typing.
 
 (** ** Restricted classes of normal forms *)
