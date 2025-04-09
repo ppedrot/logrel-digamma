@@ -1370,7 +1370,7 @@ Ltac Wirrelevance0 :=
   | [|- W[_ ||-<_> _ ≅ _ | _ ]< _ > ] => eapply WLRTyEqIrrelevant'
   | [|- W[_ ||-<_> _ : _ | _ ]< _ > ] => eapply WLRTmRedIrrelevant'
   | [|- W[_ ||-<_> _ ≅ _ : _ | _ ]< _ > ] => eapply WLRTmEqIrrelevant'
-  | [|- W[_ ||-<_> _ : _ | _]< _ > × [_ ||-<_> _≅ _ : _ | _]< _ >] => eapply WLRTmTmEqIrrelevant'
+  | [|- W[_ ||-<_> _ : _ | _]< _ > × W[_ ||-<_> _≅ _ : _ | _]< _ >] => eapply WLRTmTmEqIrrelevant'
   end.
 
 Ltac Wirrelevance := Wirrelevance0 ; [|eassumption] ; try first [reflexivity| now bsimpl].

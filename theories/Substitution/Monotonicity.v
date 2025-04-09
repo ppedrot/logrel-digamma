@@ -19,7 +19,7 @@ Proof.
     5: eassumption.
 Defined.
 
-Lemma Validity_Ltrans l Γ A wl wl' (f: wl' ≤ε wl) P :
+Lemma Validity_Ltrans {l Γ A wl wl' P} (f: wl' ≤ε wl) :
   [ P | Γ ||-v< l > A ]< wl > -> [ VPack_Ltrans f P | Γ ||-v< l > A ]< wl' >.
 Proof.
   intros [red eq] ; unshelve econstructor.
@@ -120,7 +120,7 @@ Proof.
         assert ((eq_ind_r
           (fun T : Type =>
            T =
-           snocValidSubst wl' Γ (VPack_Ltrans f VΓ) A l (Validity_Ltrans l Γ A wl wl' f VΓ VA) Δ
+           snocValidSubst wl' Γ (VPack_Ltrans f VΓ) A l (Validity_Ltrans f VA) Δ
              wl'0 σ f0 wfΔ) eq_refl (Hsub Δ wl'0 σ (f0 •ε f) wfΔ)) =
                   (Hsub Δ wl'0 σ (f0 •ε f) wfΔ)).
         { generalize ((Hsub Δ wl'0 σ (f0 •ε f) wfΔ)).
