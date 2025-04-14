@@ -261,6 +261,14 @@ Proof.
   - exact inl.
 Qed.
 
+Lemma not_in_LCon_le_not_in_LCon {l l' n} (ne : not_in_LCon (pi1 l') n) :
+  l' ≤ε l -> not_in_LCon (pi1 l) n.
+Proof.
+  intros f ; destruct (decidInLCon l n) as [i | i | ] ; [.. | assumption].
+  1,2: exfalso ; eapply notinLConnotinLCon ; eauto.
+Qed.
+
+
 Definition AllInLCon (n : nat) (l : wfLCon) : SProp :=
   forall (m : nat), m < n -> Sor (in_LCon l m true) (in_LCon l m false).
 

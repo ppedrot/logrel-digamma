@@ -145,11 +145,11 @@ Defined.
     WLogRel@{i j k l} l wl' Γ A.
   Proof.
     intros f HA ; unshelve econstructor.
-    - eapply DTree_Ltrans ; [eassumption | ].
+    - eapply DTree_Ltrans_down ; [eassumption | ].
       exact (WT _ HA).
     - intros wl'' Hover.
       eapply (WRed _ HA).
-      now eapply over_tree_Ltrans.
+      now eapply over_tree_Ltrans_down.
   Defined.      
 
   
@@ -240,11 +240,11 @@ Lemma WEq_Ltrans@{h i j k l} {wl Γ wl' A B l}
     WLogRelEq@{i j k l} l wl' Γ A B (WLtrans@{h i j k l} f lrA).
   Proof.
     intros Heq ; unshelve econstructor.
-    - eapply DTree_Ltrans ; [eassumption | ].
+    - eapply DTree_Ltrans_down ; [eassumption | ].
       exact (WTEq _ Heq).
     - intros wl'' Hover Hover'.
       eapply (WRedEq _ Heq).
-      now eapply over_tree_Ltrans.
+      now eapply over_tree_Ltrans_down.
   Defined.      
 
   
@@ -632,11 +632,11 @@ Lemma WTm_Ltrans@{h i j k l} {wl Γ wl' A t l}
     WLogRelTm@{i j k l} l wl' Γ t A (WLtrans@{h i j k l} f lrA).
   Proof.
     intros Ht ; unshelve econstructor.
-    - eapply DTree_Ltrans ; [eassumption | ].
+    - eapply DTree_Ltrans_down ; [eassumption | ].
       exact (WTTm _ Ht).
     - intros wl'' Hover Hover'.
       eapply (WRedTm _ Ht).
-      now eapply over_tree_Ltrans.
+      now eapply over_tree_Ltrans_down.
   Defined.
 
   Lemma WTm_Ltrans'@{h i j k l} {wl Γ wl' A t l}
@@ -796,11 +796,11 @@ Lemma WTmEq_Ltrans@{h i j k l} {wl Γ wl' t u A l}
     WLogRelTmEq@{i j k l} l wl' Γ t u A (WLtrans@{h i j k l} f lrA).
   Proof.
     intros Htu ; unshelve econstructor.
-    - eapply DTree_Ltrans ; [eassumption | ].
+    - eapply DTree_Ltrans_down ; [eassumption | ].
       exact (WTTmEq _ Htu).
     - intros wl'' Hover Hover'.
       eapply (WRedTmEq _ Htu).
-      now eapply over_tree_Ltrans.
+      now eapply over_tree_Ltrans_down.
   Defined.
 
   Lemma WTmEq_Ltrans'@{h i j k l} {wl Γ wl' t u A l}

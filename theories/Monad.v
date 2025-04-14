@@ -146,23 +146,38 @@ Proof.
     now eapply LCon_le_step, wfLCon_le_id.
 Defined.
 
-Fixpoint DTree_Ltrans (k k' : wfLCon) (f : k' ≤ε k) (d : DTree k) : DTree k'.
+Fixpoint DTree_Ltrans_down (k k' : wfLCon) (f : k' ≤ε k) (d : DTree k) : DTree k'.
 Proof.
   refine (match d with
           | leaf _ => leaf _
           | @ϝnode _ n ne dt df => _
           end).
   destruct (decidInLCon k' n) as [ Hint | Hinf | Hnotin].
-  - refine (DTree_Ltrans (k,,l (ne, true)) k' _ dt).
+  - refine (DTree_Ltrans_down (k,,l (ne, true)) k' _ dt).
     now eapply LCon_le_in_LCon.
-  - refine (DTree_Ltrans (k,,l (ne, false)) k' _ df).
+  - refine (DTree_Ltrans_down (k,,l (ne, false)) k' _ df).
     now eapply LCon_le_in_LCon.
   - refine (@ϝnode _ n Hnotin _ _).
-    + unshelve eapply (DTree_Ltrans _ _ _ dt).
+    + unshelve eapply (DTree_Ltrans_down _ _ _ dt).
       now eapply LCon_le_up.
-    + unshelve eapply (DTree_Ltrans _ _ _ df).
+    + unshelve eapply (DTree_Ltrans_down _ _ _ df).
       now eapply LCon_le_up.
 Defined.
+
+Fixpoint DTree_Ltrans_up (k k' : wfLCon) (f : k' ≤ε k) (d : DTree k') : DTree k.
+Proof.
+  unshelve refine (match d with
+          | leaf _ => leaf _
+          | @ϝnode _ n ne dt df => @ϝnode _ n _ _ _
+          end).
+  - now eapply not_in_LCon_le_not_in_LCon.
+  - eapply DTree_Ltrans_up ; [ | exact dt].
+    now eapply LCon_le_up.
+  - eapply DTree_Ltrans_up ; [ | exact df].
+    now eapply LCon_le_up.
+Defined.  
+
+
 
 Fixpoint DTree_fusion (k : wfLCon) (d d' : DTree k) : DTree k.
 Proof.
@@ -171,10 +186,10 @@ Proof.
           | @ϝnode _ n ne dt df => @ϝnode _ n ne _ _
           end).
   - refine (DTree_fusion _ dt _).
-    unshelve eapply (DTree_Ltrans _ _ _ d').
+    unshelve eapply (DTree_Ltrans_down _ _ _ d').
     eapply LCon_le_step ; now apply wfLCon_le_id.
   - refine (DTree_fusion _ df _).
-    unshelve eapply (DTree_Ltrans _ _ _ d').
+    unshelve eapply (DTree_Ltrans_down _ _ _ d').
     eapply LCon_le_step ; now apply wfLCon_le_id.
 Defined.
 
@@ -225,8 +240,8 @@ Proof.
 Qed.
   
 
-Lemma over_tree_Ltrans (k k' k'' : wfLCon) (f : k' ≤ε k) (d : DTree k) :
-  over_tree k' k'' (DTree_Ltrans k k' f d) -> over_tree k k'' d.
+Lemma over_tree_Ltrans_down (k k' k'' : wfLCon) (f : k' ≤ε k) (d : DTree k) :
+  over_tree k' k'' (DTree_Ltrans_down k k' f d) -> over_tree k k'' d.
 Proof.
   intros Hyp ; assert (f' : k'' ≤ε k') by now eapply over_tree_le.
   revert k' k'' f f' Hyp ; induction d as [  | k n ne kt IHt kf IHf] ; cbn ; intros k' k'' f f' Hyp.
@@ -252,8 +267,8 @@ Proof.
       * assumption.
 Qed.
 
-Lemma Ltrans_over_tree (k k' k'' : wfLCon) (f : k' ≤ε k) (f' : k'' ≤ε k') (d : DTree k) :
-  over_tree k k'' d -> over_tree k' k'' (DTree_Ltrans k k' f d).
+Lemma Ltrans_down_over_tree (k k' k'' : wfLCon) (f : k' ≤ε k) (f' : k'' ≤ε k') (d : DTree k) :
+  over_tree k k'' d -> over_tree k' k'' (DTree_Ltrans_down k k' f d).
 Proof.
   revert k' k'' f f' ; induction d as [  | k n ne kt IHt kf IHf] ; intros * f' ; cbn.
   - now eauto.
@@ -269,6 +284,20 @@ Proof.
       * eapply IHf ; eauto.
         now eapply LCon_le_in_LCon ; eauto.
 Qed.
+
+Lemma over_tree_Ltrans_up {k k' k'' : wfLCon} (f : k' ≤ε k) (f' : k'' ≤ε k') (d : DTree k') :
+  over_tree k k'' (DTree_Ltrans_up k k' f d) -> over_tree k' k'' d.
+Proof.
+  revert k k'' f f' ; induction d as [  | k n ne kt IHt kf IHf] ; cbn ; intros k' k'' f f' Hyp.
+  - eassumption.
+  - destruct (decidInLCon k'' n).
+    + eapply IHt ; eauto.
+      eapply LCon_le_in_LCon ; eassumption.
+    + eapply IHf ; eauto.
+      eapply LCon_le_in_LCon ; eassumption.
+    + assumption.
+Qed. 
+  
       
 Lemma over_tree_fusion_l k k' d d' :
   over_tree k k' (DTree_fusion k d d') ->
@@ -292,8 +321,8 @@ Proof.
   - eassumption.
   - cbn in * ; subst.
     destruct (decidInLCon k' n).
-    + eapply over_tree_Ltrans, IHt ; eassumption.
-    + eapply over_tree_Ltrans, IHf ; eassumption.
+    + eapply over_tree_Ltrans_down, IHt ; eassumption.
+    + eapply over_tree_Ltrans_down, IHf ; eassumption.
     + now inversion Hov.
 Qed.
 

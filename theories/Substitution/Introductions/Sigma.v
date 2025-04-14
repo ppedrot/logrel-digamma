@@ -802,7 +802,7 @@ Section PairRed.
       Unshelve. 4-8: shelve.
       5: eapply RBfst.
       4: now eapply wfc_Ltrans ; [ now eapply over_tree_le | ].
-      all: unshelve eapply over_tree_Ltrans ; [| eassumption | ].
+      all: unshelve eapply over_tree_Ltrans_down ; [| eassumption | ].
       1: do 2 eapply over_tree_fusion_l ; exact Ho'.
       1: eapply over_tree_fusion_r, over_tree_fusion_l ; exact Ho'.
       1: eapply over_tree_fusion_l, over_tree_fusion_r ; exact Ho'.
