@@ -300,6 +300,12 @@ Section MoreDefs.
     - cbn ; now unshelve eapply (VRSnoc _ _ VΓ VΓ VA). 
   Defined.
 
+  Definition validEmpty' {wl} : [VR| ||-v ε ]< wl >.
+  Proof.
+    exists emptyVPack.
+    now constructor.
+  Defined.
+  
   Definition validSnoc' {wl Γ} {A l}
     (VΓ : [VR| ||-v Γ]< wl >) (VA : (typeValidity wl Γ VΓ l A)) :
     [VR | ||-v Γ ,, A ]< wl >.

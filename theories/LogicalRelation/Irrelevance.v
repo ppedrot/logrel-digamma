@@ -928,6 +928,15 @@ Proof.
   intros wl' f ; now eapply LRCumulative, Hd.
 Qed.
 
+Corollary WLRCumulative' @{i j k l i' j' k' l'} {lA}
+  {wl : wfLCon} {Γ : context} {A A' : term}
+  : A = A' ->
+    WLogRel@{i j k l} lA wl Γ A ->
+    WLogRel@{i' j' k' l'} lA wl Γ A'.
+Proof.
+  intros ->; apply WLRCumulative.
+Qed.
+
 End LRIrrelevant.
 
 
@@ -1349,6 +1358,16 @@ Ltac irrelevanceCum0 :=
 Ltac irrelevanceCum := irrelevanceCum0 ; [|eassumption] ; try first [reflexivity| now bsimpl].
 
 Ltac irrelevanceCumRefl := irrelevanceCum0 ; [reflexivity|].
+
+Ltac WirrelevanceCum0 :=
+  lazymatch goal with
+  | [|- W[_ ||-<_> _]< _ >] => (now eapply WLRCumulative) + eapply WLRCumulative'
+  | [|- W[_ ||-<_> _ ≅ _ | _ ]< _ > ] => eapply WLRTyEqIrrelevantCum'
+  | [|- W[_ ||-<_> _ : _ | _ ]< _ > ] => eapply WLRTmRedIrrelevantCum'
+  | [|- W[_ ||-<_> _ ≅ _ : _ | _ ]< _ > ] => eapply WLRTmEqIrrelevantCum'
+  end.
+
+Ltac WirrelevanceCum := WirrelevanceCum0 ; [|eassumption] ; try first [reflexivity| now bsimpl].
 
 Ltac irrelevance0 :=
   lazymatch goal with

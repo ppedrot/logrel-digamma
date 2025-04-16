@@ -242,10 +242,10 @@ Proof.
 Defined.
 
 Lemma eqsubst_Ltrans {Γ Δ σ σ' wl wl' wl''}
-  (f: wl' ≤ε wl)
+  {f: wl' ≤ε wl}
   (f': wl'' ≤ε wl')
-  (VΓ : [||-v Γ ]< wl >)
-  (wfΔ : [ |-[ ta ] Δ ]< wl' >)
+  {VΓ : [||-v Γ ]< wl >}
+  {wfΔ : [ |-[ ta ] Δ ]< wl' >}
   (wfΔ' : [ |-[ ta ] Δ ]< wl'' >)
   (Vσ: [VΓ | Δ ||-v σ : Γ | wfΔ | f ]< wl >) :
   [VΓ | Δ ||-v σ ≅ σ' : Γ | wfΔ | Vσ | f ]< wl > ->
@@ -272,7 +272,6 @@ Lemma eqsubst_Ltrans' {Γ Δ σ σ' wl wl' wl''}
   (f: wl' ≤ε wl)
   (f': wl'' ≤ε wl')
   (VΓ : [||-v Γ ]< wl >)
-  (wfΔ : [ |-[ ta ] Δ ]< wl' >)
   (wfΔ' : [ |-[ ta ] Δ ]< wl'' >)
   (Vσ: [VΓ | Δ ||-v σ : Γ | wfΔ' | (f' •ε f) ]< wl >) :
   [VΓ | Δ ||-v σ ≅ σ' : Γ | wfΔ' | Vσ | (f' •ε f) ]< wl > ->

@@ -64,6 +64,48 @@ same. Both need to be proven simultaneously, because of contravariance in the pr
         in LRId _ IA embedIdAd
     end.
 
+  Lemma WLR_embedding@{i j k l} {l l'} (l_ : l << l')
+    {wl Γ A } (lr : WLogRel@{i j k l} l wl Γ A)
+    : (WLogRel@{i j k l} l' wl Γ A).
+  Proof.
+    exists (WT _ lr).
+    intros wl' Ho. eapply LRbuild.
+    eapply LR_embedding ; [eassumption | ].
+    unshelve eapply WRed ; [ |  eassumption | eassumption].
+  Defined.
+
+  Lemma WLREq_embedding@{i j k l} {l l'} (l_ : l << l')
+    {wl Γ A B} (lr : WLogRel@{i j k l} l wl Γ A)
+    (Heq: WLogRelEq@{i j k l} l wl Γ A B lr)
+    : (WLogRelEq@{i j k l} l' wl Γ A B (WLR_embedding l_ lr)).
+  Proof.
+    exists (WTEq _ Heq).
+    intros wl' Ho Ho'.
+    cbn.
+    now unshelve eapply WRedEq.
+  Defined.
+
+  Lemma WLRTm_embedding@{i j k l} {l l'} (l_ : l << l')
+    {wl Γ t A} (lr : WLogRel@{i j k l} l wl Γ A)
+    (Ht: WLogRelTm@{i j k l} l wl Γ t A lr)
+    : (WLogRelTm@{i j k l} l' wl Γ t A (WLR_embedding l_ lr)).
+  Proof.
+    exists (WTTm _ Ht).
+    intros wl' Ho Ho'.
+    cbn.
+    now unshelve eapply WRedTm.
+  Defined.
+
+  Lemma WLRTmEq_embedding@{i j k l} {l l'} (l_ : l << l')
+    {wl Γ t u A} (lr : WLogRel@{i j k l} l wl Γ A)
+    (Heq: WLogRelTmEq@{i j k l} l wl Γ t u A lr)
+    : (WLogRelTmEq@{i j k l} l' wl Γ t u A (WLR_embedding l_ lr)).
+  Proof.
+    exists (WTTmEq _ Heq).
+    intros wl' Ho Ho'.
+    cbn.
+    now unshelve eapply WRedTmEq.
+  Defined.
   (** A basic induction principle, that handles only the first point in the list above *)
 
   Notation PolyHyp P wl Γ ΠA HAad G :=

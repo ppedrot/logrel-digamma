@@ -1,6 +1,6 @@
 From LogRel.AutoSubst Require Import core unscoped Ast Extra.
 From LogRel Require Import Notations Utils BasicAst LContexts Context NormalForms Weakening GenericTyping Monad LogicalRelation.
-From LogRel.LogicalRelation Require Import Induction Irrelevance Weakening Neutral Escape Reflexivity NormalRed Reduction Monotonicity Transitivity Universe.
+From LogRel.LogicalRelation Require Import Induction Irrelevance Weakening Neutral Escape Reflexivity NormalRed Reduction Monotonicity Split Transitivity Universe.
 
 Set Universe Polymorphism.
 Set Printing Primitive Projection Parameters.
@@ -130,7 +130,7 @@ Section IdRed.
     Unshelve. irrelevanceCum.
   Qed.
 
-  Lemma WIdRedU@{i j k l} {wl Γ l l' A t u} {lt : l' << l}
+  Lemma WIdRedU@{i j k l} {wl Γ l l' A t u}
       (RU : WLogRel@{i j k l} l wl Γ U)
       (RA : WLogRel@{i j k l} l' wl Γ A) :
       W[Γ ||-< l > A : U | RU]< wl > ->
@@ -198,6 +198,62 @@ Section IdRed.
       Unshelve. now eapply IdRed.
   Qed.
 
+  Lemma WIdCongRedU@{i j k l} {wl Γ l l' A A' t t' u u'}
+      (RU : WLogRel@{i j k l} l wl Γ U)
+      (RA : WLogRel@{i j k l} l' wl Γ A)
+      (RA' : WLogRel@{i j k l} l' wl Γ A') :
+      W[Γ ||-< l > A : U | RU]< wl > ->
+      W[Γ ||-< l > A' : U | RU]< wl > ->
+      W[Γ ||-< l > A ≅ A' : U | RU]< wl > ->
+      W[Γ ||-< l' > t : _ | RA]< wl > ->
+      W[Γ ||-< l' > t' : _ | RA']< wl > ->
+      W[Γ ||-< l' > t ≅ t' : _ | RA]< wl > ->
+      W[Γ ||-< l' > u : _ | RA]< wl > ->
+      W[Γ ||-< l' > u' : _ | RA']< wl > ->
+      W[Γ ||-< l' > u ≅ u' : _ | RA]< wl > ->
+      W[Γ ||-< l > tId A t u ≅ tId A' t' u' : U | RU]< wl >.
+  Proof.
+    intros HA HA' HAeq Ht Ht' Hteq Hu Hu' Hueq ; unshelve econstructor.
+    1: do 4 eapply DTree_fusion ; shelve.
+    intros wl' Ho Ho'.
+    pose (f := over_tree_le Ho).
+    unshelve eapply IdCongRedU.
+    - unshelve eapply UnivEq.
+      3: unshelve eapply HA.
+      1: eapply over_tree_fusion_l, over_tree_fusion_l, over_tree_fusion_l, over_tree_fusion_l ; exact Ho'.
+      eapply over_tree_fusion_r, over_tree_fusion_l, over_tree_fusion_l, over_tree_fusion_l ; exact Ho'.
+    - unshelve eapply UnivEq.
+      3: unshelve eapply HA'.
+      1: eapply over_tree_fusion_l, over_tree_fusion_r, over_tree_fusion_l, over_tree_fusion_l ; exact Ho'.
+      eapply over_tree_fusion_r, over_tree_fusion_r, over_tree_fusion_l, over_tree_fusion_l ; exact Ho'.
+    - unshelve eapply HA.
+      eapply over_tree_fusion_r, over_tree_fusion_l, over_tree_fusion_l, over_tree_fusion_l ; exact Ho'.
+    - unshelve eapply HA'.
+      eapply over_tree_fusion_r, over_tree_fusion_r, over_tree_fusion_l, over_tree_fusion_l ; exact Ho'.
+    - unshelve eapply HAeq.
+      eapply over_tree_fusion_l, over_tree_fusion_l, over_tree_fusion_r, over_tree_fusion_l ; exact Ho'.
+    - irrelevanceRefl ; unshelve eapply Ht.
+      1: eapply over_tree_fusion_r, over_tree_fusion_l, over_tree_fusion_r, over_tree_fusion_l ; exact Ho'.
+      eapply over_tree_fusion_l, over_tree_fusion_r, over_tree_fusion_r, over_tree_fusion_l ; exact Ho'.
+    - irrelevanceRefl ; unshelve eapply Ht'.
+      1: eapply over_tree_fusion_r, over_tree_fusion_r, over_tree_fusion_r, over_tree_fusion_l ; exact Ho'.
+      eapply over_tree_fusion_l, over_tree_fusion_l, over_tree_fusion_l, over_tree_fusion_r ; exact Ho'.
+    - irrelevanceRefl ; unshelve eapply Hteq.
+      1: eapply over_tree_fusion_r, over_tree_fusion_l, over_tree_fusion_r, over_tree_fusion_l ; exact Ho'.
+      eapply over_tree_fusion_r, over_tree_fusion_l, over_tree_fusion_l, over_tree_fusion_r ; exact Ho'.
+    - irrelevanceRefl ; unshelve eapply Hu.
+      1: eapply over_tree_fusion_r, over_tree_fusion_l, over_tree_fusion_r, over_tree_fusion_l ; exact Ho'.
+      eapply over_tree_fusion_l, over_tree_fusion_r, over_tree_fusion_l, over_tree_fusion_r ; exact Ho'.
+    - irrelevanceRefl ; unshelve eapply Hu'.
+      1: eapply over_tree_fusion_r, over_tree_fusion_r, over_tree_fusion_r, over_tree_fusion_l ; exact Ho'.
+      eapply over_tree_fusion_r, over_tree_fusion_r, over_tree_fusion_l, over_tree_fusion_r ; exact Ho'.
+    - irrelevanceRefl ; unshelve eapply Hueq.
+      1: eapply over_tree_fusion_r, over_tree_fusion_l, over_tree_fusion_r, over_tree_fusion_l ; exact Ho'.
+      eapply over_tree_fusion_l, over_tree_fusion_l, over_tree_fusion_r, over_tree_fusion_r ; exact Ho'.
+      Unshelve.
+      all: now constructor.
+  Qed.
+    
 
 
 Lemma reflRed {wl Γ l A x} (RA : [Γ ||-<l> A]< wl >) (Rx : [RA | _ ||- x : _]< wl >) (RIA : [Γ ||-<l> tId A x x]< wl >) :
@@ -388,6 +444,68 @@ Proof.
     + eapply redtm_refl; escape; now eapply ty_IdElim.
 Qed.
 
+Lemma WidElimPropRed {wl Γ l A x P hr y e}
+  (RA : W[Γ ||-<l> A]< wl >)
+  (Rx : W[_ ||-< l > x : _ | RA]< wl >)
+  (RP0 : W[Γ ,, A ,, tId A⟨@wk1 Γ A⟩ x⟨@wk1 Γ A⟩ (tRel 0) ||-<l> P]< wl >)
+  (RP : forall y e (Ry : W[Γ ||-< l > y : _| RA]< wl >)
+               (RIAxy : W[Γ ||-<l> tId A x y]< wl >),
+    W[_ ||-< l > e : _ | RIAxy]< wl > -> W[Γ ||-<l> P[e .: y..]]< wl >)
+  (RPeq : forall A' x' y y' e e' 
+    (RA' : W[Γ ||-<l> A']< wl >)
+    (RAA' : W[_ ||-< l > _ ≅ A' | RA]< wl >)
+    (Rx' : W[_ ||-< l > x' : _ | RA]< wl >)
+    (Rxx' : W[_ ||-< l > x ≅ x' : _ | RA]< wl >)
+    (Ry : W[Γ ||-< l > y : _ | RA]< wl >)
+    (Ry' : W[_ ||-< l > y' : _ | RA']< wl >)
+    (Ryy' : W[Γ ||-< l > y ≅ y' : _ | RA]< wl >)
+    (RIAxy : W[Γ ||-<l> tId A x y]< wl >)
+    (RIAxy' : W[Γ ||-<l> tId A x y']< wl >)
+    (Re : W[ _ ||-< l > e : _ | RIAxy]< wl >)
+    (Re' : W[ _ ||-< l > e' : _ | RIAxy']< wl >)
+    (Ree' : W[ _ ||-< l > e ≅ e' : _ | RIAxy]< wl >),
+    W[ Γ ||-< l > P[e .: y..] ≅ P[e' .: y' ..] | RP y e Ry RIAxy Re]< wl >)
+  (Rhr : W[_ ||-< l > hr : _ | RP x (tRefl A x) Rx (WIdRed RA Rx Rx) (WreflRed' RA Rx) ]< wl >)
+  (Ry : W[_ ||-< l > y : _ | RA]< wl >)
+  (RIAxy : W[Γ ||-<l> tId A x y]< wl >)
+  (Re : W[_ ||-< l > e : _ | RIAxy ]< wl >)
+  (RIAxy0 : [Γ ||-Id<l> tId A x y]< wl >)
+  (Pe : IdProp RIAxy0 e) :
+  W[ _ ||-< l > tIdElim A x P hr y e : _ | RP y e Ry _ Re]< wl > ×
+  W[ _ ||-< l > tIdElim A x P hr y e ≅ idElimProp A x P hr y e Pe : _ | RP y e Ry _ Re]< wl >.
+Proof.
+  pose proof (IdRedTy_inv RIAxy0) as [eA ex ey].
+  eapply WredSubstTerm.
+  - destruct Pe ; cbn in *.
+    + eapply WLRTmRedConv ; [ | exact Rhr].
+      unshelve eapply RPeq; cycle 4; tea.
+      2,3: Wirrelevance0 ; [ symmetry ; exact eA | ].
+      2,3: eapply TmEqLogtoW, transEqTerm; [|eapply LRTmEqSym]; now rewrite ?ex, ?ey.
+      * eapply WreflLRTyEq.
+      * eapply WreflCongRed; tea.
+        2:rewrite ex ; Wirrelevance0 ; [symmetry ; exact eA | ].
+        2: now eapply TmEqLogtoW.
+        Wirrelevance0; [symmetry; exact eA|] ; now eapply EqLogtoW.
+    + eapply WneuTerm.
+      * escape ; Wescape; eapply ty_IdElim; tea.
+      * destruct r.
+        pose proof (WreflLRTyEq RA).
+        pose proof (WreflLRTyEq RP0).
+        pose proof Rx as ?%WreflLRTmEq.
+        pose proof Ry as ?%WreflLRTmEq.
+        pose proof Rhr as ?%WreflLRTmEq.
+        Wescape ; escape; eapply convneu_IdElim; tea.
+        eapply convneu_conv; tea. unfold_id_outTy.
+        rewrite <- eA, <- ex, <- ey; eapply convty_Id; tea.
+  - destruct Pe; cbn in *.
+    + escape ; Wescape ; eapply redtm_idElimRefl; tea.
+      * eapply ty_conv; tea; rewrite eA; now symmetry.
+      * now rewrite eA.
+      * rewrite eA, ex, ey; etransitivity; tea; now symmetry.
+      * now rewrite eA, ex.
+    + eapply redtm_refl; escape; Wescape ; now eapply ty_IdElim.
+Qed.
+    
 
 Lemma idElimRed {wl Γ l A x P hr y e}
   (RA : [Γ ||-<l> A]< wl >)
@@ -429,110 +547,55 @@ Proof.
     Unshelve. all: tea.
   - escape; eapply redtm_idElim; tea; apply hred.
 Qed.
-(*
+
 Lemma WidElimRed {wl Γ l A x P hr y e}
   (RA : W[Γ ||-<l> A]< wl >)
   (Rx : W[_ ||-< l > x : _ | RA]< wl >)
   (RP0 : W[Γ ,, A ,, tId A⟨@wk1 Γ A⟩ x⟨@wk1 Γ A⟩ (tRel 0) ||-<l> P]< wl >)
-  (RP : forall wl' (f : wl' ≤ε wl) (WRA : W[Γ ||-<l> A]< wl' >) y e
-               (Ry : W[Γ ||-< l > y : _| WRA]< wl' >) (RIAxy : W[Γ ||-<l> tId A x y]< wl' >),
-    W[_ ||-< l > e : _ | RIAxy]< wl' > -> W[Γ ||-<l> P[e .: y..]]< wl' >)
-  (RPeq : forall wl' f WRA A' x' y y' e e' 
-    (RA' : W[Γ ||-<l> A']< wl' >)
-    (RAA' : W[_ ||-< l > _ ≅ A' | WRA]< wl' >)
-    (Rx' : W[_ ||-< l > x' : _ | WRA]< wl' >)
-    (Rxx' : W[_ ||-< l > x ≅ x' : _ | WRA]< wl' >)
-    (Ry : W[Γ ||-< l > y : _ | WRA]< wl' >)
-    (Ry' : W[_ ||-< l > y' : _ | RA']< wl' >)
-    (Ryy' : W[Γ ||-< l > y ≅ y' : _ | WRA]< wl' >)
-    (RIAxy : W[Γ ||-<l> tId A x y]< wl' >)
-    (RIAxy' : W[Γ ||-<l> tId A x y']< wl' >)
-    (Re : W[ _ ||-< l > e : _ | RIAxy]< wl' >)
-    (Re' : W[ _ ||-< l > e' : _ | RIAxy']< wl' >)
-    (Ree' : W[ _ ||-< l > e ≅ e' : _ | RIAxy]< wl' >),
-    W[ Γ ||-< l > P[e .: y..] ≅ P[e' .: y' ..] | RP wl' f WRA y e Ry RIAxy Re]< wl' >)
-  (Rhr : W[_ ||-< l > hr : _ | RP wl (wfLCon_le_id _) RA x (tRefl A x) Rx (WIdRed RA Rx Rx) (WreflRed' RA Rx) ]< wl >)
+  (RP : forall y e
+               (Ry : W[Γ ||-< l > y : _| RA]< wl >) (RIAxy : W[Γ ||-<l> tId A x y]< wl >),
+    W[_ ||-< l > e : _ | RIAxy]< wl > -> W[Γ ||-<l> P[e .: y..]]< wl >)
+  (RPeq : forall A' x' y y' e e' 
+    (RA' : W[Γ ||-<l> A']< wl >)
+    (RAA' : W[_ ||-< l > _ ≅ A' | RA]< wl >)
+    (Rx' : W[_ ||-< l > x' : _ | RA]< wl >)
+    (Rxx' : W[_ ||-< l > x ≅ x' : _ | RA]< wl >)
+    (Ry : W[Γ ||-< l > y : _ | RA]< wl >)
+    (Ry' : W[_ ||-< l > y' : _ | RA']< wl >)
+    (Ryy' : W[Γ ||-< l > y ≅ y' : _ | RA]< wl >)
+    (RIAxy : W[Γ ||-<l> tId A x y]< wl >)
+    (RIAxy' : W[Γ ||-<l> tId A x y']< wl >)
+    (Re : W[ _ ||-< l > e : _ | RIAxy]< wl >)
+    (Re' : W[ _ ||-< l > e' : _ | RIAxy']< wl >)
+    (Ree' : W[ _ ||-< l > e ≅ e' : _ | RIAxy]< wl >),
+    W[ Γ ||-< l > P[e .: y..] ≅ P[e' .: y' ..] | RP y e Ry RIAxy Re]< wl >)
+  (Rhr : W[_ ||-< l > hr : _ | RP x (tRefl A x) Rx (WIdRed RA Rx Rx) (WreflRed' RA Rx) ]< wl >)
   (Ry : W[_ ||-< l > y : _ | RA]< wl >)
-  (RIAxy : W[Γ ||-<l> tId A x y]< wl >)
-  (RIAxy':= Build_WLogRel _ _ _ _ _ (fun wl'' Ho => LRId' (invLRId (WRed _ RIAxy wl'' Ho))))
-  (Re : W[_ ||-< l > e : _ | RIAxy' ]< wl >) :
-  W[ _ ||-< l > tIdElim A x P hr y e : _ | RP wl (wfLCon_le_id _) RA y e Ry _ Re]< wl > ×
-  (forall wl' Ho Ho' Ho'',                                                           
-      let f := over_tree_le Ho in
-      [WRed _ (RP wl' f (WLtrans f RA) y e (WTm_Ltrans f _ Ry) _ (WTm_Ltrans f _ Re)) wl' Ho'' | _ ||- tIdElim A x P hr y e ≅ tIdElim A x P hr y (IdRedTm.nf (WRedTm _ Re wl' Ho Ho')) : _]< wl' >).
+  (RIAxy : [Γ ||-<l> tId A x y]< wl >)
+  (RIAxy' := LRId' (invLRId RIAxy))
+  (Re : [RIAxy' | _ ||- e : _]< wl >) :
+  W[ _ ||-< l > tIdElim A x P hr y e : _ | RP y e Ry _ (TmLogtoW _ Re)]< wl > ×
+   W[ _ ||-< l > tIdElim A x P hr y e ≅ tIdElim A x P hr y (IdRedTm.nf Re) : _ | RP y e Ry _ (TmLogtoW _ Re)]< wl >.
 Proof.
-  About IdRedTy_inv.
-  split ; [ eapply WredSubstTerm | ].
-  - unshelve econstructor ; [do 2 eapply DTree_fusion ; shelve | ] ; intros wl' Ho Ho'.
-    pose proof (IdRedTy_inv (invLRId (WRed _ RIAxy wl' (over_tree_fusion_l (over_tree_fusion_l Ho'))))) as [eA ex ey].
-    pose (Re':= WRedTm _ Re wl' (over_tree_fusion_l (over_tree_fusion_l Ho')) (over_tree_fusion_r (over_tree_fusion_l Ho'))).
-    pose proof (hred := Re'.(IdRedTm.red)); unfold_id_outTy; rewrite <-eA,<-ex,<-ey in hred.
-    pose proof (redTmFwdConv Re' hred (IdProp_whnf _ _ (IdRedTm.prop Re'))) as [Rnf Rnfeq].
-    eapply LRTmRedConv.
-    About idElimPropRed.
-    2: unshelve eapply idElimPropRed; tea.
-    all: try exact (IdRedTm.prop Re').
-    unshelve eapply LRTyEqSym.
-    2: now eapply RP.
-  
-
-  
   pose proof (IdRedTy_inv (invLRId RIAxy)) as [eA ex ey].
   pose proof (hred := Re.(IdRedTm.red)); unfold_id_outTy; rewrite <-eA,<-ex,<-ey in hred.
-  eapply redSubstTerm.
+  eapply WredSubstTerm.
   - pose proof (redTmFwdConv Re hred (IdProp_whnf _ _ (IdRedTm.prop Re))) as [Rnf Rnfeq].
-    eapply LRTmRedConv.
-    2: eapply idElimPropRed; tea; exact (IdRedTm.prop Re).
-    unshelve eapply LRTyEqSym.
-    2: now eapply RP.
-    eapply RPeq; cycle 2; first [eapply reflLRTyEq | now eapply reflLRTmEq | tea].
-    Unshelve. all: tea.
-  - escape; eapply redtm_idElim; tea; apply hred.
+    eapply WLRTmRedConv.
+    2: eapply WidElimPropRed; tea.
+    2: exact (IdRedTm.prop Re).
+    unshelve eapply WLRTyEqSym.
+    2: eapply RP ; tea.
+    1: now eapply TmLogtoW.
+    eapply RPeq; cycle 2; first [eapply WreflLRTyEq | now eapply WreflLRTmEq | tea].
+    1: now eapply TmLogtoW.
+    1: now eapply TmEqLogtoW.
+    Unshelve. 1: now tea.
+    2: eapply TmLogtoW ; eassumption.
+  - Wescape.  eapply redtm_idElim; tea; apply hred.
 Qed.
 
 
-  split.
-  - unshelve econstructor.
-    1: do 3 eapply DTree_fusion ; [ .. | eapply DTree_fusion] ; shelve.
-    intros wl' Ho Ho' ; pose (f := over_tree_le Ho).
-    irrelevanceRefl ; unshelve eapply idElimRed.
-    + eapply RA ; do 3 eapply over_tree_fusion_l ; exact Ho'. 
-    + cbn ; intros.
-      unshelve eapply WRed.
-      
-      
-
-      ; unshelve eapply RP ; [ | eassumption | ..].
-      * exact (WLtrans f RA).
-      * now eapply TmLogtoW'.
-      * now eapply LogtoW.
-      * now eapply TmLogtoW.
-      * eapply over_tree_Ltrans_up ; [ now eapply wfLCon_le_id | ].
-        do 2 eapply over_tree_fusion_l ; eapply over_tree_fusion_r ; exact Ho'.
-    + unshelve eapply Ry ; shelve.
-    + eapply RIAxy ; shelve.
-    + eapply Re ; shelve.
-    + eapply Rx ; shelve.
-    + eapply RP0 ; shelve.
-    + intros ; unshelve eapply RPeq.
-      4: eapply EqLogtoW' ; exact RAA'.
-      4: eapply TmEqLogtoW' ; exact Rxx'.
-      all: try now eapply TmEqLogtoW' + now eapply TmLogtoW' + now eapply LogtoW.
-      shelve.
-    + cbn. irrelevanceRefl ; eapply Rhr. shelve.
-      Unshelve.
-    + 
-      2:{ eapply TmLogtoW'. ; eassumption.
-      
-  epose (test:= Build_WLogRel _ _ _ _ _ (fun wl'' Ho => LRId' (invLRId (WRed _ RIAxy wl'' Ho)))).
-  assert (Re' :  W[_ ||-< l > e : _ | test ]< wl >) by admit.
-  pose (test' := Build_WLogRelTm _ _ _ _ _  _ _ (fun wl'' Ho Ho' => (WRedTm _ Re' wl'' Ho Ho'))).
-  cbn in test'.
- (RIAxy' := LRId' (invLRId RIAxy))
- 
-×
-  [RP y e Ry _ Re | _ ||-< l > tIdElim A x P hr y e ≅ tIdElim A x P hr y (IdRedTm.nf Re) : _]< wl >.
-*)
 Lemma idElimPropCongRed {wl Γ l A A' x x' P P' hr hr' y y' e e'}
   (RA : [Γ ||-<l> A]< wl >)
   (RA' : [Γ ||-<l> A']< wl >)
@@ -639,6 +702,260 @@ Proof.
         now rewrite ex, ey, eA.
 Qed.
 
+Lemma WidElimPropCongRed {wl Γ l A A' x x' P P' hr hr' y y' e e'}
+  (RA : W[Γ ||-<l> A]< wl >)
+  (RA' : W[Γ ||-<l> A']< wl >)
+  (RAA' : W[ Γ ||-< l > A ≅ A' | RA]< wl >)
+  (Rx : W[ _ ||-< l > x : _ | RA]< wl >)
+  (Rx' : W[ _ ||-< l > x' : _ | RA']< wl >)
+  (Rxx' : W[ _ ||-< l > x ≅ x' : _ | RA]< wl >)
+  (RP0 : W[Γ ,, A ,, tId A⟨@wk1 Γ A⟩ x⟨@wk1 Γ A⟩ (tRel 0) ||-<l> P]< wl >)
+  (RP0' : W[Γ ,, A' ,, tId A'⟨@wk1 Γ A'⟩ x'⟨@wk1 Γ A'⟩ (tRel 0) ||-<l> P']< wl >)
+  (RPP0 : W[ _ ||-< l > _ ≅ P' | RP0]< wl >)
+  (RP : forall y e (Ry : W[ Γ ||-< l > y : _ | RA]< wl >) (RIAxy : W[Γ ||-<l> tId A x y]< wl >),
+    W[ _ ||-< l > e : _ | RIAxy]< wl > -> W[Γ ||-<l> P[e .: y..]]< wl >)
+  (RP' : forall y' e' (Ry' : W[ Γ ||-< l > y' : _ | RA']< wl >) (RIAxy' : W[Γ ||-<l> tId A' x' y']< wl >),
+    W[ _ ||-< l > e' : _ | RIAxy']< wl > -> W[Γ ||-<l> P'[e' .: y'..]]< wl >)
+  (RPP' : forall y y' e e' 
+    (Ry : W[ Γ ||-< l > y : _ | RA]< wl >)
+    (Ry' : W[ Γ ||-< l > y' : _ | RA']< wl >)
+    (Ryy' : W[ _ ||-< l > y ≅ y' : _ | RA]< wl >)
+    (RIAxy : W[Γ ||-<l> tId A x y]< wl >)
+    (RIAxy' : W[Γ ||-<l> tId A' x' y']< wl >)
+    (Re : W[ _ ||-< l > e : _ | RIAxy]< wl >)
+    (Re' : W[ _ ||-< l > e' : _ | RIAxy']< wl >)
+    (Ree' : W[ _ ||-< l > e ≅ e' : _ | RIAxy]< wl >),
+    W[ _ ||-< l > P[e .: y..] ≅ P'[e' .: y'..] | RP y e Ry _ Re]< wl >)
+  (RPeq : forall A' x' y y' e e' 
+    (RA' : W[Γ ||-<l> A']< wl >)
+    (RAA' : W[ _ ||-< l > _ ≅ A' | RA]< wl >)
+    (Rx' : W[ _ ||-< l > x' : _ | RA]< wl >)
+    (Rxx' : W[ _ ||-< l > x ≅ x' : _ | RA]< wl >)
+    (Ry : W[ Γ ||-< l > y : _ | RA]< wl >)
+    (Ry' : W[ _ ||-< l > y' : _ | RA']< wl >)
+    (Ryy' : W[ Γ ||-< l > y ≅ y' : _ | RA]< wl >)
+    (RIAxy : W[Γ ||-<l> tId A x y]< wl >)
+    (RIAxy' : W[Γ ||-<l> tId A x y']< wl >)
+    (Re : W[ _ ||-< l > e : _ | RIAxy]< wl >)
+    (Re' : W[ _ ||-< l > e' : _ | RIAxy']< wl >)
+    (Ree' : W[ _ ||-< l > e ≅ e' : _ | RIAxy]< wl >),
+    W[Γ ||-< l > P[e .: y..] ≅ P[e' .: y' ..] | RP y e Ry RIAxy Re]< wl >)
+  (RPeq' : forall A1 x1 y' y1 e' e1 
+    (RA1 : W[Γ ||-<l> A1]< wl >)
+    (RAA1 : W[ _ ||-< l > _ ≅ A1 | RA']< wl >)
+    (Rx1 : W[ _ ||-< l > x1 : _ | RA']< wl >)
+    (Rxx1 : W[ _ ||-< l > x' ≅ x1 : _ | RA']< wl >)
+    (Ry' : W[ Γ ||-< l > y' : _ | RA']< wl >)
+    (Ry1 : W[ _ ||-< l > y1 : _ | RA1]< wl >)
+    (Ryy1 : W[ Γ ||-< l > y' ≅ y1 : _ | RA']< wl >)
+    (RIAxy' : W[Γ ||-<l> tId A' x' y']< wl >)
+    (RIAxy1 : W[Γ ||-<l> tId A' x' y1]< wl >)
+    (Re' : W[ _ ||-< l > e' : _ | RIAxy']< wl >)
+    (Re1 : W[ _ ||-< l > e1 : _ | RIAxy1]< wl >)
+    (Ree1 : W[ _ ||-< l > e' ≅ e1 : _ | RIAxy']< wl >),
+    W[Γ ||-< l > P'[e' .: y'..] ≅ P'[e1 .: y1 ..] | RP' y' e' Ry' RIAxy' Re' ]< wl >)
+  (Rhr : W[ _ ||-< l > hr : _ | RP x (tRefl A x) Rx (WIdRed RA Rx Rx) (WreflRed' RA Rx)]< wl >)
+  (Rhr' : W[ _ ||-< l > hr' : _ | RP' x' (tRefl A' x') Rx' (WIdRed RA' Rx' Rx') (WreflRed' RA' Rx') ]< wl >)
+  (Rhrhr' : W[ _ ||-< l > hr ≅ hr' : _ | RP x (tRefl A x) Rx (WIdRed RA Rx Rx) (WreflRed' RA Rx)]< wl >)
+  (Ry : W[ _ ||-< l > y : _ | RA]< wl >)
+  (Ry' : W[ _ ||-< l > y' : _ | RA']< wl >)
+  (Ryy' : W[ _ ||-< l > y ≅ y' : _ | RA]< wl >)
+  (RIAxy : [Γ ||-<l> tId A x y]< wl >)
+  (RIAxy' : [Γ ||-<l> tId A' x' y']< wl >)
+  (WRIAxy : W[Γ ||-<l> tId A x y]< wl >)
+  (WRe : W[ _ ||-< l > e : _ | WRIAxy]< wl >) 
+  (Re : [ _ ||-< l > e : _ | RIAxy]< wl >) 
+  (Re' : [ _ ||-< l > e' : _ | RIAxy']< wl >) 
+  (Ree' : [_ ||-< l > e ≅ e' : _ | RIAxy]< wl >)
+  (RIAxy0 : [Γ ||-Id<l> tId A x y]< wl >)
+  (Pee' : IdPropEq RIAxy0 e e') :
+  W[_ ||-< l > tIdElim A x P hr y e ≅ tIdElim A' x' P' hr' y' e' : _ | RP y e Ry _ WRe ]< wl >.
+Proof.
+  pose proof (IdRedTy_inv RIAxy0) as [eA ex ey].
+  (* pose proof (IdRedTy_inv (invLRId RIAxy))) as [eA ex ey].
+  pose proof (IdRedTy_inv (invLRId RIAxy')) as [eA' ex' ey']. *)
+  pose proof (IdPropEq_whnf _ _ _ Pee') as [whe whe'].
+  assert (Rei : [LRId' RIAxy0 | _ ||- e : _]< wl >) by irrelevance.
+  assert (Rei' : [LRId' (invLRId RIAxy') | _ ||- e' : _]< wl >) by irrelevance.
+  pose proof (IdRedTm_whnf_prop Rei whe).
+  pose proof (IdRedTm_whnf_prop Rei' whe').
+  eapply WLREqTermHelper.
+  1,2: unshelve eapply WidElimPropRed; tea.
+  1: now eapply LogtoW.
+  1: now eapply TmLogtoW.
+  - intros ; eapply RPP' ; tea.
+    1: now eapply TmLogtoW.
+    now eapply TmEqLogtoW'.
+  - destruct Pee'; cbn in *.
+    + unshelve erewrite (idElimPropIrr X), (idElimPropIrr X0).
+      1,2: now eapply IdProp_refl_inv.
+      cbn; eapply WLRTmEqRedConv; tea.
+      eapply RPeq; cycle 3; tea.
+      1,4: rewrite ex, ey; eapply WtransEqTerm; [|eapply WLRTmEqSym].
+      1,2,3,4: Wirrelevance0 ; [ symmetry | now eapply TmEqLogtoW] ; eauto.
+      2: now eapply WreflLRTyEq.
+      eapply WreflCongRed; tea.
+      1: Wirrelevance0 ; [ symmetry | now eapply EqLogtoW] ; eauto.
+      rewrite ex ; Wirrelevance0 ; [ symmetry | now eapply TmEqLogtoW] ; eauto.
+  + unshelve erewrite (idElimPropIrr X), (idElimPropIrr X0); destruct r; unfold_id_outTy.
+    * econstructor; Wescape ; constructor; unfold_id_outTy.
+      1: rewrite <- ex, <- ey, <-eA; tea.
+      now eapply lrefl.
+    * econstructor; pose proof (IdRedTy_inv (invLRId RIAxy')) as [eA' ex' ey'].
+      escape ; Wescape; constructor; unfold_id_outTy.
+      all: rewrite <- ex', <- ey', <-eA'; tea.
+      eapply convneu_conv; [now eapply urefl|].
+      rewrite <- ex, <- ey, <-eA; now eapply convty_Id.
+    * cbn. Wescape ; escape; eapply WneuTermEq.
+      -- now eapply ty_IdElim.
+      -- eapply ty_conv; [now eapply ty_IdElim|].
+         symmetry; eapply WescapeEq; eapply RPP' ; tea.
+         1: now eapply TmLogtoW.
+         1: now eapply TmEqLogtoW.
+         Unshelve. all: tea.
+         now eapply TmLogtoW.
+      -- eapply convneu_IdElim; tea.
+         now rewrite ex, ey, eA.
+Qed.
+
+
+Lemma WidElimCongRed {wl Γ l A A' x x' P P' hr hr' y y' e e'}
+  (RA : W[Γ ||-<l> A]< wl >)
+  (RA' : W[Γ ||-<l> A']< wl >)
+  (RAA' : W[ Γ ||-< l > A ≅ A' | RA]< wl >)
+  (Rx : W[ _ ||-< l > x : _ | RA]< wl >)
+  (Rx' : W[ _ ||-< l > x' : _ | RA']< wl >)
+  (Rxx' : W[ _ ||-< l > x ≅ x' : _ | RA]< wl >)
+  (RP0 : W[Γ ,, A ,, tId A⟨@wk1 Γ A⟩ x⟨@wk1 Γ A⟩ (tRel 0) ||-<l> P]< wl >)
+  (RP0' : W[Γ ,, A' ,, tId A'⟨@wk1 Γ A'⟩ x'⟨@wk1 Γ A'⟩ (tRel 0) ||-<l> P']< wl >)
+  (RPP0 : W[ _ ||-< l > _ ≅ P' | RP0]< wl >)
+  (RP : forall wl' (f :  wl' ≤ε wl) (WRA : W[Γ ||-<l> A]< wl' >)
+               y e (Ry : W[ Γ ||-< l > y : _ | WRA]< wl' >)
+               (RIAxy : W[Γ ||-<l> tId A x y]< wl' >),
+    W[ _ ||-< l > e : _ | RIAxy]< wl' > -> W[Γ ||-<l> P[e .: y..]]< wl' >)
+  (RP' : forall wl' (f :  wl' ≤ε wl) (WRA' : W[Γ ||-<l> A']< wl' >)
+                y' e' (Ry' : W[ Γ ||-< l > y' : _ | WRA']< wl' >)
+                (RIAxy' : W[Γ ||-<l> tId A' x' y']< wl' >),
+    W[ _ ||-< l > e' : _ | RIAxy']< wl' > -> W[Γ ||-<l> P'[e' .: y'..]]< wl' >)
+  (RPP' : forall wl' (f :  wl' ≤ε wl)
+                 (WRA : W[Γ ||-<l> A]< wl' >) (WRA' : W[Γ ||-<l> A']< wl' >)
+                 y y' e e' 
+    (Ry : W[ Γ ||-< l > y : _ | WRA]< wl' >)
+    (Ry' : W[ Γ ||-< l > y' : _ | WRA']< wl' >)
+    (Ryy' : W[ _ ||-< l > y ≅ y' : _ | WRA]< wl' >)
+    (RIAxy : W[Γ ||-<l> tId A x y]< wl' >)
+    (RIAxy' : W[Γ ||-<l> tId A' x' y']< wl' >)
+    (Re : W[ _ ||-< l > e : _ | RIAxy]< wl' >)
+    (Re' : W[ _ ||-< l > e' : _ | RIAxy']< wl' >)
+    (Ree' : W[ _ ||-< l > e ≅ e' : _ | RIAxy]< wl' >),
+      W[ _ ||-< l > P[e .: y..] ≅ P'[e' .: y'..] | RP wl' f WRA y e Ry _ Re]< wl' >)
+  (RPeq : forall wl' (f :  wl' ≤ε wl) A' x' y y' e e'
+                 (WRA : W[Γ ||-<l> A]< wl' >)
+                 (RA' : W[Γ ||-<l> A']< wl' >)
+                 (RAA' : W[ _ ||-< l > _ ≅ A' | WRA]< wl' >)
+                 (Rx' : W[ _ ||-< l > x' : _ | WRA]< wl' >)
+                 (Rxx' : W[ _ ||-< l > x ≅ x' : _ | WRA]< wl' >)
+                 (Ry : W[ Γ ||-< l > y : _ | WRA]< wl' >)
+                 (Ry' : W[ _ ||-< l > y' : _ | RA']< wl' >)
+                 (Ryy' : W[ Γ ||-< l > y ≅ y' : _ | WRA]< wl' >)
+                 (RIAxy : W[Γ ||-<l> tId A x y]< wl' >)
+                 (RIAxy' : W[Γ ||-<l> tId A x y']< wl' >)
+                 (Re : W[ _ ||-< l > e : _ | RIAxy]< wl' >)
+                 (Re' : W[ _ ||-< l > e' : _ | RIAxy']< wl' >)
+                 (Ree' : W[ _ ||-< l > e ≅ e' : _ | RIAxy]< wl' >),
+      W[Γ ||-< l > P[e .: y..] ≅ P[e' .: y' ..] | RP wl' f WRA y e Ry RIAxy Re]< wl' >)
+  (RPeq' : forall wl' (f :  wl' ≤ε wl) A1 x1 y' y1 e' e1
+                  (WRA' : W[Γ ||-<l> A']< wl' >)
+                  (RA1 : W[Γ ||-<l> A1]< wl' >)
+                  (RAA1 : W[ _ ||-< l > _ ≅ A1 | WRA']< wl' >)
+                  (Rx1 : W[ _ ||-< l > x1 : _ | WRA']< wl' >)
+                  (Rxx1 : W[ _ ||-< l > x' ≅ x1 : _ | WRA']< wl' >)
+                  (Ry' : W[ Γ ||-< l > y' : _ | WRA']< wl' >)
+                  (Ry1 : W[ _ ||-< l > y1 : _ | RA1]< wl' >)
+                  (Ryy1 : W[ Γ ||-< l > y' ≅ y1 : _ | WRA']< wl' >)
+                  (RIAxy' : W[Γ ||-<l> tId A' x' y']< wl' >)
+                  (RIAxy1 : W[Γ ||-<l> tId A' x' y1]< wl' >)
+                  (Re' : W[ _ ||-< l > e' : _ | RIAxy']< wl' >)
+                  (Re1 : W[ _ ||-< l > e1 : _ | RIAxy1]< wl' >)
+                  (Ree1 : W[ _ ||-< l > e' ≅ e1 : _ | RIAxy']< wl' >),
+    W[Γ ||-< l > P'[e' .: y'..] ≅ P'[e1 .: y1 ..] | RP' wl' f WRA' y' e' Ry' RIAxy' Re' ]< wl' >)
+  (Rhr : W[ _ ||-< l > hr : _ | RP wl (idε _) RA x (tRefl A x) Rx (WIdRed RA Rx Rx) (WreflRed' RA Rx)]< wl >)
+  (Rhr' : W[ _ ||-< l > hr' : _ | RP' _ (idε _) RA' x' (tRefl A' x') Rx' (WIdRed RA' Rx' Rx') (WreflRed' RA' Rx') ]< wl >)
+  (Rhrhr' : W[ _ ||-< l > hr ≅ hr' : _ | RP _ (idε _) RA x (tRefl A x) Rx (WIdRed RA Rx Rx) (WreflRed' RA Rx)]< wl >)
+  (Ry : W[ _ ||-< l > y : _ | RA]< wl >)
+  (Ry' : W[ _ ||-< l > y' : _ | RA']< wl >)
+  (Ryy' : W[ _ ||-< l > y ≅ y' : _ | RA]< wl >)
+  (WRIAxy : W[Γ ||-<l> tId A x y]< wl >)
+  (WRIAxy' : W[Γ ||-<l> tId A' x' y']< wl >)
+  (WRe : W[ _ ||-< l > e : _ | WRIAxy]< wl >) 
+  (WRe' : W[ _ ||-< l > e' : _ | WRIAxy']< wl >) 
+  (WRee' : W[_ ||-< l > e ≅ e' : _ | WRIAxy]< wl >) :
+  W[_ ||-< l > tIdElim A x P hr y e ≅ tIdElim A' x' P' hr' y' e' : _ | RP wl (wfLCon_le_id _) RA y e Ry _ WRe ]< wl >.
+Proof.
+  unshelve eapply TreeTmEqSplit ; [do 3 eapply DTree_fusion ; shelve | ].
+  intros wl' Ho HA.
+  pose (f:= over_tree_le Ho).
+  pose (RIAxy := WRed _ WRIAxy wl' (over_tree_fusion_l (over_tree_fusion_l (over_tree_fusion_l Ho)))).
+  pose (RIAxy' := WRed _ WRIAxy' wl' (over_tree_fusion_r (over_tree_fusion_l (over_tree_fusion_l Ho)))).
+  unshelve epose (Re := WRedTm _ WRe wl' _ (over_tree_fusion_l (over_tree_fusion_r (over_tree_fusion_l Ho)))).
+  1: now do 3 eapply over_tree_fusion_l ; exact Ho.
+  unshelve epose (Re' := WRedTm _ WRe' wl' _ (over_tree_fusion_r (over_tree_fusion_r (over_tree_fusion_l Ho)))).
+  1: eapply over_tree_fusion_r, over_tree_fusion_l, over_tree_fusion_l ; exact Ho.
+  assert (Req : [LRId' (invLRId RIAxy) | _ ||- e ≅ e' : _]< wl' >).
+  { irrelevanceRefl ; eapply WRee', over_tree_fusion_l, over_tree_fusion_l, over_tree_fusion_r ; exact Ho.
+  }
+  cbn in Req; inversion Req; unfold_id_outTy.
+  pose proof (IdRedTy_inv (invLRId RIAxy)) as [eA ex ey].
+  pose proof redL as [? _]; pose proof redR as [? _].
+  rewrite <-eA,<-ex,<-ey in redL, redR.
+  pose proof (IdPropEq_whnf _ _ _ prop) as [whL whR].
+  pose proof (redTmFwdConv Re redL whL) as [RnfL RnfLeq].
+  assert (redR' : [Γ |-[ ta ] e' :⤳*: nfR : tId A' x' y' ]< wl' >).
+  { eapply redtmwf_conv ; [eassumption | eapply convty_Ltrans ; [eassumption | ] ] ; escape ; Wescape.
+    eapply convty_Id ; now tea.
+  }
+  epose proof (redTmFwdConv Re' redR' whR) as [RnfR RnfReq].
+  eapply WLREqTermHelper ; cycle -1.
+  - eapply WLRTmEqRedConv.
+    2: eapply WidElimPropCongRed.
+    17: exact prop.
+    all: try (now eapply WLtrans) + (now eapply WEq_Ltrans) + (now eapply WTm_Ltrans) + (now eapply WTmEq_Ltrans).
+    all: try (now eapply WEq_Ltrans') + (now eapply WTm_Ltrans') + (now eapply WTmEq_Ltrans').
+    all: tea.
+    + eapply RPeq; cycle 2; first [eapply WreflLRTmEq | eapply WLRTmEqSym| eapply WreflLRTyEq| tea].
+      1,2,3,4,6: now eapply WTm_Ltrans.
+      now eapply TmEqLogtoW.
+    + intros ; unshelve eapply RPP' ; now eauto.
+    + intros ; unshelve eapply RPeq ; cycle 6 ; eassumption.
+    + intros ; unshelve eapply RPeq' ; cycle 11 ; eassumption.
+    + enough [LRId' (invLRId RIAxy) | _ ||- nfL ≅ nfR : _]< wl' > by irrelevance.
+      exists nfL nfR; tea; eapply redtmwf_refl; unfold_id_outTy; tea.
+  - assert (Re1 : [LRId' (invLRId RIAxy) | _ ||- e : _]< wl' >) by irrelevance.
+    rewrite (redtmwf_det whL (IdProp_whnf _ _ Re1.(IdRedTm.prop)) redL Re1.(IdRedTm.red)).
+    cbn ; Wirrelevance0 ; [ reflexivity | ] ; eapply WidElimRed ; tea.
+    + now eapply WLtrans.
+    + intros ; unshelve eapply RPeq ; cycle 11 ; try eassumption.
+      now eapply WLtrans.
+    + now eapply WTm_Ltrans'.
+  - assert (Re1' : [LRId' (invLRId RIAxy') | _ ||- e' : _]< wl' >) by irrelevance.
+    rewrite (redtmwf_det whR (IdProp_whnf _ _ Re1'.(IdRedTm.prop)) redR Re1'.(IdRedTm.red)).
+    cbn ; Wirrelevance0 ; [ reflexivity | ] ; eapply WidElimRed ; tea.
+    + now eapply WLtrans.
+    + intros ; unshelve eapply RPeq' ; cycle 11 ; try eassumption.
+      now eapply WLtrans.
+    + now eapply WTm_Ltrans'.
+  - cbn ; Wirrelevance0 ; [ reflexivity | eapply RPP'].
+    1,3: now eapply WTm_Ltrans.
+    all: now eapply WTmEq_Ltrans.
+    Unshelve. 
+    all: tea.
+    4: exact (over_tree_fusion_l (over_tree_fusion_l (over_tree_fusion_l Ho))).
+    1-3: now constructor.
+    1:unshelve eapply RP' ; eauto.
+    all: try (now eapply WLtrans) + (now eapply WEq_Ltrans) + (now eapply WTm_Ltrans) + (now eapply WTmEq_Ltrans).
+    now eapply TmLogtoW.
+Qed.
+  
 Lemma idElimCongRed {wl Γ l A A' x x' P P' hr hr' y y' e e'}
   (RA : [Γ ||-<l> A]< wl >)
   (RA' : [Γ ||-<l> A']< wl >)
@@ -650,7 +967,7 @@ Lemma idElimCongRed {wl Γ l A A' x x' P P' hr hr' y y' e e'}
   (RP0' : [Γ ,, A' ,, tId A'⟨@wk1 Γ A'⟩ x'⟨@wk1 Γ A'⟩ (tRel 0) ||-<l> P']< wl >)
   (RPP0 : [RP0 | _ ||- _ ≅ P']< wl >)
   (RP : forall y e (Ry : [RA | Γ ||- y : _]< wl >) (RIAxy : [Γ ||-<l> tId A x y]< wl >),
-    [ RIAxy | _ ||- e : _]< wl > -> [Γ ||-<l> P[e .: y..]]< wl >)
+    [RIAxy | _ ||- e : _]< wl > -> [Γ ||-<l> P[e .: y..]]< wl >)
   (RP' : forall y' e' (Ry' : [RA' | Γ ||- y' : _]< wl >) (RIAxy' : [Γ ||-<l> tId A' x' y']< wl >),
     [ RIAxy' | _ ||- e' : _]< wl > -> [Γ ||-<l> P'[e' .: y'..]]< wl >)
   (RPP' : forall y y' e e' 
@@ -659,9 +976,9 @@ Lemma idElimCongRed {wl Γ l A A' x x' P P' hr hr' y y' e e'}
     (Ryy' : [RA | _ ||- y ≅ y' : _]< wl >)
     (RIAxy : [Γ ||-<l> tId A x y]< wl >)
     (RIAxy' : [Γ ||-<l> tId A' x' y']< wl >)
-    (Re : [ RIAxy | _ ||- e : _]< wl >)
+    (Re : [RIAxy | _ ||- e : _]< wl >)
     (Re' : [ RIAxy' | _ ||- e' : _]< wl >)
-    (Ree' : [ RIAxy | _ ||- e ≅ e' : _]< wl >),
+    (Ree' : [RIAxy | _ ||- e ≅ e' : _]< wl >),
     [RP y e Ry _ Re | _ ||- P[e .: y..] ≅ P'[e' .: y'..]]< wl >)
   (RPeq : forall A' x' y y' e e' 
     (RA' : [Γ ||-<l> A']< wl >)
@@ -673,9 +990,9 @@ Lemma idElimCongRed {wl Γ l A A' x x' P P' hr hr' y y' e e'}
     (Ryy' : [RA | Γ ||- y ≅ y' : _]< wl >)
     (RIAxy : [Γ ||-<l> tId A x y]< wl >)
     (RIAxy' : [Γ ||-<l> tId A x y']< wl >)
-    (Re : [ RIAxy | _ ||- e : _]< wl >)
+    (Re : [RIAxy | _ ||- e : _]< wl >)
     (Re' : [ RIAxy' | _ ||- e' : _]< wl >)
-    (Ree' : [ RIAxy | _ ||- e ≅ e' : _]< wl >),
+    (Ree' : [RIAxy | _ ||- e ≅ e' : _]< wl >),
     [RP y e Ry RIAxy Re | Γ ||- P[e .: y..] ≅ P[e' .: y' ..]]< wl >)
   (RPeq' : forall A1 x1 y' y1 e' e1 
     (RA1 : [Γ ||-<l> A1]< wl >)

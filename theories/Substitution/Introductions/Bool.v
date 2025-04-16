@@ -405,7 +405,7 @@ Proof.
 Qed.
 
 
-Lemma alphaccongValid {wl Γ l n n'} (VΓ : [||-v Γ]< wl >) 
+Lemma alphacongValid {wl Γ l n n'} (VΓ : [||-v Γ]< wl >) 
   (Vn : [Γ ||-v<l> n : tNat | VΓ | natValid VΓ]< wl >)
   (Vn' : [Γ ||-v<l> n' : tNat | VΓ | natValid VΓ]< wl >)
   (Veqn : [Γ ||-v<l> n ≅ n' : tNat | VΓ | natValid VΓ]< wl >) :
@@ -414,6 +414,34 @@ Proof.
   constructor; intros; cbn; instValid Vσ; now eapply WalphaRedEq.
 Qed.
 
+Lemma nSucc_subst :
+  forall n t (σ : nat -> term), (nSucc n t)[σ] = nSucc n t[σ].
+Proof.
+  induction n ; cbn in * ; [reflexivity | ].
+  intros ; now rewrite IHn.
+Qed.
+
+Lemma bool_to_term_subst :
+  forall b (σ : nat -> term), (bool_to_term b)[σ] = bool_to_term b.
+Proof.
+  induction b ; cbn in * ; reflexivity. 
+Qed.  
+
+Lemma alphacongValidSubst {wl Γ n b} (VΓ : [||-v Γ]< wl >) (Hin : in_LCon wl n b) :
+  [Γ ||-v< one > tAlpha (nat_to_term n) ≅ bool_to_term b : tBool | VΓ | boolValid VΓ ]< wl >.
+Proof.
+  unshelve econstructor.
+  intros ; eapply WredSubstTerm.
+  - destruct b ; cbn.
+    + unshelve eapply trueValid ; cycle 2 ; eassumption.
+    + unshelve eapply falseValid ; cycle 2 ; eassumption.
+  - cbn ; unfold nat_to_term.
+    rewrite nSucc_subst, bool_to_term_subst ; cbn.
+    unshelve eapply redtm_alpha ; [assumption | ].
+    now eapply f.
+Qed.    
+
+  
 (*
 Lemma elimSuccHypTy_subst {P} σ :
   elimSuccHypTy P[up_term_term σ] = (elimSuccHypTy P)[σ].
