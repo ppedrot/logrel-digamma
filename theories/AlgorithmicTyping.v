@@ -116,6 +116,7 @@ Section Definitions.
       [Γ |- hf ≅ t : P[tFalse..]]< wl ,,l (ne, false) > ->
       [Γ |- tBoolElim P ht hf (tAlpha (nat_to_term n)) ≅ t : P[(tAlpha (nat_to_term n))..]]< wl >
     | ϝtermConv_r {Γ n P ht hf t} {ne : not_in_LCon (pi1 wl) n} :
+      whnf t ->
       [Γ |- t ≅ ht : P[tTrue..]]< wl ,,l (ne, true) > ->
       [Γ |- t ≅ hf : P[tFalse..]]< wl ,,l (ne, false) > ->
       [Γ |- t ≅ tBoolElim P ht hf (tAlpha (nat_to_term n)) : P[(tAlpha (nat_to_term n))..]]< wl >
@@ -583,11 +584,12 @@ Section TypingWk.
       + change tFalse with (tFalse⟨ρ⟩).
         rewrite <- (wk_up_ren_on _ _ _ tBool), <- subst_ren_wk_up.
         now eapply Hf.
-    - intros * ? Ht ? Hf *.
+    - intros * ?? Ht ? Hf *.
       cbn ; unfold nat_to_term ; rewrite nSucc_ren ; cbn.
       rewrite (subst_ren_wk_up (A := tBool)) ; cbn ; rewrite nSucc_ren ; cbn.
       change (nSucc n tZero) with (nat_to_term n).
       unshelve eapply ϝtermConv_r ; [assumption | ..].
+      + now eapply whnf_ren.
       + change tTrue with (tTrue⟨ρ⟩).
         rewrite <- (wk_up_ren_on _ _ _ tBool), <- subst_ren_wk_up.
         now eapply Ht.
@@ -641,7 +643,7 @@ Section TypingWk.
     [Δ |- t⟨ρ⟩ ▹h A⟨ρ⟩]< wl >.
   Let PCheck (wl : wfLCon) (Γ : context) (A t : term) := forall Δ (ρ : Δ ≤ Γ),
   [Δ |- t⟨ρ⟩ ◃ A⟨ρ⟩]< wl >.
-About AlgoTypingInductionConcl.
+
   Theorem algo_typing_wk (wl : wfLCon) :
     AlgoTypingInductionConcl wl (PTy wl) (PInf wl) (PInfRed wl) (PCheck wl).
   Proof.
