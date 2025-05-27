@@ -423,6 +423,24 @@ Proof.
   - now inversion Hover.
 Qed.
 
+Fixpoint DTree_leftmost {k} (d : DTree k) : wfLCon :=
+  match d as d0 
+  with
+  | leaf _ => k
+  | @ϝnode _ n ne dt df => DTree_leftmost dt
+  end.
+
+Lemma DTree_leftmost_over k d : over_tree k (DTree_leftmost d) d.
+Proof.
+  induction d.
+  - now eapply wfLCon_le_id.
+  - cbn in *.
+    assert (H : in_LCon (DTree_leftmost d1) n true).
+    { eapply (over_tree_le IHd1).
+      now econstructor.
+    }
+    now rewrite (decidInLCon_true H).
+Qed.
 
 Lemma DTree_bind_DTree_path (k k' : wfLCon) (d : DTree k)
   (P : forall k' (H : over_tree k k' d), DTree k')

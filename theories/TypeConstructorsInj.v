@@ -292,11 +292,19 @@ Section TypeConstructors.
     do 2 eexists ; split.
     all: eassumption.
   Qed.
+*)
 
-  Corollary prod_ty_inj Γ A B  A' B' :
+  Corollary prod_ty_inj wl Γ A B  A' B' :
     [Γ |- tProd A B ≅ tProd A' B']< wl > ->
     [Γ |- A' ≅ A]< wl > × [Γ,, A' |- B ≅ B']< wl >.
   Proof.
+    intros Hconv.
+    unshelve eapply ty_conv_inj in Hconv ; try now econstructor.
+    now eassumption.
+Qed.
+
+    
+  (*
     intros Hty.
     unshelve eapply ty_conv_inj in Hty.
     1-2: constructor.
@@ -327,8 +335,8 @@ Section TypeConstructors.
   Proof.
     intros; eapply red_ty_compl_sig_l; now symmetry.
   Qed.
-
-  Corollary sig_ty_inj Γ A B  A' B' :
+*)
+  Corollary sig_ty_inj wl Γ A B  A' B' :
     [Γ |- tSig A B ≅ tSig A' B']< wl > ->
     [Γ |- A' ≅ A]< wl > × [Γ,, A' |- B ≅ B']< wl >.
   Proof.
@@ -337,7 +345,7 @@ Section TypeConstructors.
     1-2: constructor.
     now eassumption.
   Qed.
-
+(*
   Corollary red_ty_compl_id_l Γ A x y T :
     [Γ |- tId A x y ≅ T]< wl > ->
     ∑ A' x' y', [× [Γ |- T ⤳* tId A' x' y']< wl >, [Γ |- A' ≅ A]< wl >, [Γ |- x ≅ x' : A]< wl > & [Γ |- y ≅ y' : A]< wl >].
@@ -361,8 +369,8 @@ Section TypeConstructors.
   Proof.
     intros; eapply red_ty_compl_id_l; now symmetry.
   Qed.
-
-  Corollary id_ty_inj {Γ A A' x x' y y'} :
+*)
+  Corollary id_ty_inj {wl Γ A A' x x' y y'} :
     [Γ |- tId A x y ≅ tId A' x' y']< wl > ->
     [× [Γ |- A' ≅ A]< wl >, [Γ |- x ≅ x' : A]< wl > & [Γ |- y ≅ y' : A]< wl >].
   Proof.
@@ -371,7 +379,7 @@ Section TypeConstructors.
     1-2: constructor.
     now eassumption.
   Qed.
-*)
+  
 End TypeConstructors.
 
 Section Boundary.
@@ -671,39 +679,66 @@ Inductive termGenData (wl : wfLCon) (Γ : context) : term -> term -> Type :=
 
 
 
-(*
-Definition termGenData (wl : wfLCon) (Γ : context) (t T : term) : Type :=
+
+Fixpoint termGenData2 (wl : wfLCon) (Γ : context) (t T : term) : Type :=
   match t with
     | tRel n => ∑ decl, [× T = decl, [|- Γ]< wl >& in_ctx Γ n decl]
     | tProd A B =>  [× T = U, [Γ |- A : U]< wl > & [Γ,, A |- B : U]< wl >]
     | tLambda A t => ∑ B, [× T = tProd A B, [Γ |- A]< wl > & [Γ,, A |- t : B]< wl >]
-    | tApp f a => ∑ A B, [× T = B[a..], [Γ |- f : tProd A B]< wl > & [Γ |- a : A]< wl >]
+    | tApp f a => ∑ A B C, [× T = B[a..], [Γ |- f : tProd A B]< wl >, [Γ |- a : A]< wl >, [Γ |- C ≅ tProd A B]< wl > & termGenData2 wl Γ f C]
     | tSort _ => False
     | tNat => T = U
     | tZero => T = tNat
-    | tSucc n => T = tNat × [Γ |- n : tNat]< wl >
+    | tSucc n => ∑ X, [× T = tNat × [Γ |- n : tNat]< wl >, [Γ |- X ≅ tNat]< wl > & termGenData2 wl Γ n X] 
     | tNatElim P hz hs n =>
-      [× T = P[n..], [Γ,, tNat |- P]< wl >, [Γ |- hz : P[tZero..]]< wl >, [Γ |- hs : elimSuccHypTy P]< wl > & [Γ |- n : tNat]< wl >]
+        ∑ X, [× T = P[n..], [Γ,, tNat |- P]< wl >, [Γ |- hz : P[tZero..]]< wl >, [Γ |- hs : elimSuccHypTy P]< wl >, [Γ |- n : tNat]< wl >,
+                            [Γ |- X ≅ tNat]< wl > & termGenData2 wl Γ n X ]
     | tBool => T = U
     | tTrue => T = tBool
     | tFalse => T = tBool
     | tBoolElim P ht hf n =>
-      [× T = P[n..], [Γ,, tBool |- P]< wl >, [Γ |- ht : P[tTrue..]]< wl >, [Γ |- hf : P[tFalse..]]< wl > & [Γ |- n : tBool]< wl >]
-    | tAlpha n => T = tBool × [Γ |- n : tNat]< wl >
+        ∑ X, [× T = P[n..], [Γ,, tBool |- P]< wl >, [Γ |- ht : P[tTrue..]]< wl >, [Γ |- hf : P[tFalse..]]< wl >, [Γ |- n : tBool]< wl >,
+        [Γ |- X ≅ tBool]< wl > & termGenData2 wl Γ n X  ]
+    | tAlpha n => ∑ X, [× T = tBool, [Γ |- n : tNat]< wl >, [Γ |- X ≅ tNat]< wl > & termGenData2 wl Γ n X] 
     | tEmpty => T = U
     | tEmptyElim P e =>
-      [× T = P[e..], [Γ,, tEmpty |- P]< wl > & [Γ |- e : tEmpty]< wl >]
+        ∑ X, [× T = P[e..], [Γ,, tEmpty |- P]< wl >, [Γ |- e : tEmpty]< wl >,
+        [Γ |- X ≅ tEmpty]< wl > & termGenData2 wl Γ e X  ]
     | tSig A B => [× T = U, [Γ |- A : U]< wl > & [Γ ,, A |- B : U]< wl >]
     | tPair A B a b =>
      [× T = tSig A B, [Γ |- A]< wl >, [Γ,, A |- B]< wl >, [Γ |- a : A]< wl > & [Γ |- b : B[a..]]< wl >]
-    | tFst p => ∑ A B, T = A × [Γ |- p : tSig A B]< wl >
-    | tSnd p => ∑ A B, T = B[(tFst p)..] × [Γ |- p : tSig A B]< wl >
+    | tFst p => ∑ A B X, [× T = A, [Γ |- p : tSig A B]< wl >, [Γ |- X ≅ tSig A B]< wl > & termGenData2 wl Γ p X]
+    | tSnd p => ∑ A B X, [× T = B[(tFst p)..], [Γ |- p : tSig A B]< wl >,
+                       [Γ |- X ≅ tSig A B]< wl > & termGenData2 wl Γ p X]
     | tId A x y => [× T = U, [Γ |- A : U]< wl >, [Γ |- x : A]< wl > & [Γ |- y : A]< wl >]
     | tRefl A x => [× T = tId A x x, [Γ |- A]< wl > & [Γ |- x : A]< wl >]
     | tIdElim A x P hr y e => 
-      [× T = P[e .: y..], [Γ |- A]< wl >, [Γ |- x : A]< wl >, [Γ,, A,, tId A⟨@wk1 Γ A⟩ x⟨@wk1 Γ A⟩ (tRel 0) |- P]< wl >, [Γ |- hr : P[tRefl A x .: x..]]< wl >, [Γ |- y : A]< wl > & [Γ |- e : tId A x y]< wl >]
+        ∑ X, [× T = P[e .: y..], [Γ |- A]< wl >, [Γ |- x : A]< wl >, [Γ,, A,, tId A⟨@wk1 Γ A⟩ x⟨@wk1 Γ A⟩ (tRel 0) |- P]< wl >, [Γ |- hr : P[tRefl A x .: x..]]< wl >, [Γ |- y : A]< wl >, [Γ |- e : tId A x y]< wl >,
+        [Γ |- X ≅ tId A x y]< wl > & termGenData2 wl Γ e X]
   end.
-*)
+
+Inductive termGenData3 (wl : wfLCon) (Γ : context) : term -> term -> Type :=
+| retGen t T : termGenData2 wl Γ t T -> termGenData3 wl Γ t T
+| splitGen {t A At Af} {n} {ne : not_in_LCon (pi1 wl) n} :
+  [Γ |- At ≅ A]< wl ,,l (ne, true) > ->
+  termGenData3 (wl ,,l (ne, true)) Γ t At ->
+  [Γ |- Af ≅ A]< wl ,,l (ne, false) > ->
+  termGenData3 (wl ,,l (ne, false)) Γ t Af ->
+  termGenData3 wl Γ t A.
+
+Lemma termGen_escape  wl Γ t A :
+  [ |-[ de ] Γ ]< wl > -> 
+  termGenData2  wl Γ t A -> [Γ |- t : A]< wl >.
+Proof.
+  induction t ; cbn in * ; intros Ht Hyp ; eauto.
+  all : try now (destruct Hyp as [? [? ? ?]] ; subst ; econstructor ; now eauto).
+  all: try now destruct Hyp.
+  all: try now (destruct Hyp as [? ? ?] ; subst ; econstructor ; now eauto).
+  all: try now (destruct Hyp as [? [? [? [? ?]]]] ; subst ; econstructor ; now eauto).
+  all: try (now subst ; econstructor).
+  - destruct Hyp as [? [[? ?] ? ?]] ; subst.
+    now econstructor.
+Qed.
 
 
 Lemma termGen wl Γ t A :
@@ -784,6 +819,161 @@ econstructor.
 boundary.
 Qed.
 
+Lemma termGen_alt wl Γ t A :
+  [Γ |- t : A]< wl > ->
+  ∑ d, forall wl', over_tree wl wl' d -> ∑ A', (termGenData2 wl' Γ t A') × ((A' = A) + [Γ |- A' ≅ A]< wl' >).
+Proof.
+  intros Hty ; induction Hty.
+  all: try now (exists (leaf _) ; intros wl' Ho ; eapply (WfContextDecl_trans _ Ho) in w ;
+                       eexists ; split ; [..|left ; reflexivity] ; cbn ; econstructor 1 ; cbn ; by_prod_splitter).
+  all: try now (((destruct IHHty1 as [d1 H1], IHHty2 as [d2 H2] ; exists (DTree_fusion _ d1 d2) ; intros wl' Ho) + 
+               (destruct IHHty as [d1 H1] ; exists d1 ; intros wl' Ho)) ;
+                ((eapply (TypingDecl_trans _ (over_tree_le Ho)) in Hty1, Hty2) +
+                   (eapply (TypingDecl_trans _ (over_tree_le Ho)) in Hty  ; eapply (WfTypeDecl_trans _ (over_tree_le Ho)) in w) +
+               (eapply (TypingDecl_trans _ (over_tree_le Ho)) in Hty));
+            ((specialize (H1 wl' (over_tree_fusion_l Ho)) ; specialize (H2 wl' (over_tree_fusion_r Ho))) + (specialize (H1 wl' Ho))) ;
+                (eexists ; split ; [..|left ; reflexivity] ; cbn ; by_prod_splitter)).
+  - destruct IHHty1 as [d1 H1], IHHty2 as [d2 H2] ; exists (DTree_fusion _ d1 d2) ; intros wl' Ho.
+    eapply (TypingDecl_trans _ (over_tree_le Ho)) in Hty1, Hty2.
+    specialize (H1 wl' (over_tree_fusion_l Ho)) ; specialize (H2 wl' (over_tree_fusion_r Ho)).
+    eexists ; split ; [..|left ; reflexivity] ; cbn.
+    destruct H1 as [C [HGen Hyp]].
+    do 3 eexists ; split ; try (now eauto).
+    destruct Hyp ; [ subst | eassumption].
+    eapply TypeRefl ; now eapply boundary_tm in Hty1.
+  - destruct IHHty as [d H]; exists d ; intros wl' Ho ;
+      eapply (TypingDecl_trans _ (over_tree_le Ho)) in Hty;
+      try (eapply (WfTypeDecl_trans _ (over_tree_le Ho)) in w ).
+    specialize (H wl' Ho) as [A'' [HGen [Heq | Hconv]]] ; subst.
+    + eexists ; split ;  [..|left ; reflexivity].
+      eexists ; split ; tea; eauto ; econstructor ; now boundary.
+    + eexists ; split ;  [..|left ; reflexivity].
+      exists A'' ; split ; tea; now eauto.
+  - destruct IHHty1 as [d1 H1], IHHty2 as [d2 H2], IHHty3 as [d3 H3] ; exists (DTree_fusion _ d1 (DTree_fusion _ d2 d3)) ; intros wl' Ho ;
+      eapply (TypingDecl_trans _ (over_tree_le Ho)) in Hty1, Hty2, Hty3 ;
+      try (eapply (WfTypeDecl_trans _ (over_tree_le Ho)) in w ).
+    specialize (H3 wl' (over_tree_fusion_r (over_tree_fusion_r Ho))) as [A'' [HGen [Heq | Hconv]]] ; subst.
+    + eexists ; split ;  [..|left ; reflexivity].
+      eexists ; split ; tea; eauto ; econstructor ; now boundary.
+    + eexists ; split ;  [..|left ; reflexivity].
+      exists A'' ; split ; tea; now eauto.
+  - destruct IHHty as [d H]; exists d ; intros wl' Ho ;
+      eapply (TypingDecl_trans _ (over_tree_le Ho)) in Hty;
+      try (eapply (WfTypeDecl_trans _ (over_tree_le Ho)) in w ).
+    specialize (H wl' Ho) as [A'' [HGen [Heq | Hconv]]] ; subst.
+    + eexists ; split ;  [..|left ; reflexivity].
+      eexists ; split ; tea; eauto ; econstructor ; now boundary.
+    + eexists ; split ;  [..|left ; reflexivity].
+      exists A'' ; split ; tea; now eauto.
+  - destruct IHHty as [d H]; exists d ; intros wl' Ho ;
+      eapply (TypingDecl_trans _ (over_tree_le Ho)) in Hty.
+    specialize (H wl' Ho) as [A'' [HGen [Heq | Hconv]]] ; subst.
+    + eexists ; split ;  [..|left ; reflexivity].
+      eexists ; split ; tea; eauto ; econstructor ; now boundary.
+    + eexists ; split ;  [..|left ; reflexivity].
+      exists A'' ; split ; tea; now eauto.
+  - destruct IHHty1 as [d1 H1], IHHty2 as [d2 H2], IHHty3 as [d3 H3] ; exists (DTree_fusion _ d1 (DTree_fusion _ d2 d3)) ; intros wl' Ho ;
+      eapply (TypingDecl_trans _ (over_tree_le Ho)) in Hty1, Hty2, Hty3 ;
+      try (eapply (WfTypeDecl_trans _ (over_tree_le Ho)) in w ).
+    specialize (H3 wl' (over_tree_fusion_r (over_tree_fusion_r Ho))) as [A'' [HGen [Heq | Hconv]]] ; subst.
+    + eexists ; split ;  [..|left ; reflexivity].
+      eexists ; split ; tea; eauto ; econstructor ; now boundary.
+    + eexists ; split ;  [..|left ; reflexivity].
+      exists A'' ; split ; tea; now eauto.
+  - destruct IHHty1 as [d1 H1], IHHty2 as [d2 H2] ; exists (DTree_fusion _ d1 d2) ; intros wl' Ho.
+    eapply (TypingDecl_trans _ (over_tree_le Ho)) in Hty1, Hty2.
+    eapply (WfTypeDecl_trans _ (over_tree_le Ho)) in w, w0.
+    eexists ; split ; [..|left ; reflexivity] ; cbn.
+    now by_prod_splitter.
+  - destruct IHHty as [d H] ; exists d ; intros wl' Ho ;
+      eapply (TypingDecl_trans _ (over_tree_le Ho)) in Hty.
+    specialize (H wl' Ho) as [A'' [HGen [Heq | Hconv]]] ; subst.
+    + eexists ; split ;  [..|left ; reflexivity] ; cbn.
+      eexists ; eexists ; eexists ; split ; tea; eauto ; econstructor ; now boundary.
+    + eexists ; split ;  [..|left ; reflexivity].
+      eexists ; eexists ; exists A'' ; split ; tea; now eauto.    
+  - destruct IHHty as [d H] ; exists d ; intros wl' Ho ;
+      eapply (TypingDecl_trans _ (over_tree_le Ho)) in Hty.
+    specialize (H wl' Ho) as [A'' [HGen [Heq | Hconv]]] ; subst.
+    + eexists ; split ;  [..|left ; reflexivity] ; cbn.
+      eexists ; eexists ; eexists ; split ; tea; eauto ; econstructor ; now boundary.
+    + eexists ; split ;  [..|left ; reflexivity].
+      eexists ; eexists ; exists A'' ; split ; tea; now eauto.    
+    
+  - destruct IHHty1 as [d1 H1], IHHty2 as [d2 H2], IHHty3 as [d3 H3] ; exists (DTree_fusion _ d1 (DTree_fusion _ d2 d3)) ; intros wl' Ho ;
+      eapply (TypingDecl_trans _ (over_tree_le Ho)) in Hty1, Hty2, Hty3 ;
+      try (eapply (WfTypeDecl_trans _ (over_tree_le Ho)) in w ).
+    eexists ; split ;  [..|left ; reflexivity] ; cbn ; now by_prod_splitter.
+  - destruct IHHty1 as [d1 H1], IHHty2 as [d2 H2], IHHty3 as [d3 H3], IHHty4 as [d4 H4].
+    exists (DTree_fusion _ (DTree_fusion _ d1 d2) (DTree_fusion _ d3 d4)) ; intros wl' Ho.
+    eapply (TypingDecl_trans _ (over_tree_le Ho)) in Hty1, Hty2, Hty3, Hty4.
+    eapply (WfTypeDecl_trans _ (over_tree_le Ho)) in w, w0.
+    specialize (H4 wl' (over_tree_fusion_r (over_tree_fusion_r Ho))) as [A'' [HGen [Heq | Hconv]]] ; subst.
+    + eexists ; split ;  [..|left ; reflexivity].
+      eexists ; split ; tea; eauto ; econstructor ; now boundary.
+    + eexists ; split ;  [..|left ; reflexivity].
+      eexists ; now by_prod_splitter.
+  - destruct IHHty as [d1 H1].
+    exists d1 ; intros wl' Ho.
+    eapply (TypingDecl_trans _ (over_tree_le Ho)) in Hty.
+    eapply (ConvTypeDecl_trans _ (over_tree_le Ho)) in c.
+    specialize (H1 wl' Ho) as [? [? [-> | ]]].
+    + prod_splitter; tea; now right.
+    + prod_splitter; tea; right; now eapply TypeTrans.
+  - unshelve eexists.
+    1: econstructor 2 ; [exact (projT1 IHHty1) | exact (projT1 IHHty2)].
+    destruct IHHty1 as [d1 H1], IHHty2 as [d2 H2] ; intros wl' Ho ; cbn in *.
+    destruct (decidInLCon wl' n) ; try now inversion Ho.
+    + now specialize (H1 wl' Ho).
+    + now specialize (H2 wl' Ho).
+Qed.
+(*
+Proof.
+  intros Hty.
+  induction Hty.
+  all: try (eexists ; split ; [..|left ; reflexivity] ; cbn ; econstructor 1 ; cbn ; by_prod_splitter).
+  - destruct IHHty1 as [? [? [-> | ]]].
+    + destruct IHHty2 as [? [? [-> | ]]].
+      * remember (tProd A B) ; induction t ; subst.
+        -- eexists ; split ; [.. | left ; reflexivity] ; cbn ; econstructor 1 ; cbn.
+           eexists ; eexists ; now split.
+        -- eexists ; split ; [ .. | left ; reflexivity] ; cbn ; econstructor 2 ; cbn.
+    + 
+    
+    eexists ; split ; [.. | left ; reflexivity] ; cbn ; econstructor 1 ; cbn.
+    eexists ; eexists ; split ; [reflexivity | now eauto | now eauto | ].
+    clear IHHty2 ; destruct IHHty1 as [? [? [-> | ]]].
+    
+  - destruct IHHty as [? [? [-> | ]]].
+    + prod_splitter; tea; now right.
+    + prod_splitter; tea; right; now eapply TypeTrans.
+  - eexists ; split ; [..|left ; reflexivity].
+    destruct IHHty1 as [At [HAt Heqt]] ; destruct IHHty2 as [Af [HAf Heqf]] ; cbn ; econstructor 2. 
+    2,4: eassumption.
+    + destruct Heqt ; [ subst | now eauto].
+      econstructor.
+      now boundary.
+    + destruct Heqf ; [ subst | now eauto].
+      econstructor.
+      now boundary.
+Qed.
+*)
+
+Lemma termGen_alt' wl Γ t A :
+[Γ |- t : A]< wl > ->
+∑ d, forall wl', over_tree wl wl' d -> ∑ A', (termGenData2 wl' Γ t A') × [Γ |- A' ≅ A]< wl' >.
+Proof.
+intros * H.
+destruct (termGen_alt _ _ _ _ H) as [d Hd] ; exists d ; intros wl' Ho.
+  specialize (Hd wl' Ho) as [? [? [->|]]].
+- eexists ; split ; tea.
+  eapply (TypingDecl_trans _ (over_tree_le Ho)) in H.
+  econstructor.
+  boundary.
+- now eexists.
+Qed.
+
+
 Lemma typing_eta' (wl : wfLCon) (Γ : context) A B f :
   [Γ |- f : tProd A B]< wl > ->
   [Γ,, A |- eta_expand f : B]< wl >.
@@ -796,103 +986,148 @@ Proof.
     boundary.
 Qed.
 
+Lemma subject_reduction_one_aux wl Γ A t t' :
+    [Γ |- t : A]< wl > ->
+    [t ⤳ t']< wl > ->
+    termGenData2 wl Γ t A ->
+    [Γ |- t ≅ t' : A]< wl >.
+Proof.
+  intros Hty Hred.
+  induction Hred in Hty, A |- * ; intros HGen ; cbn in *.
+  - destruct HGen as [A' [B' [C [Heq ?? Hconv [B'' [Heq' ?]]]]]] ; subst.
+    symmetry in Hconv ; eapply prod_ty_inj in Hconv as [? HeqB].
+    econstructor ; tea.
+    all: now econstructor.
+  - destruct HGen as [A' [B' [C [Heq ?? Hconv HGen]]]] ; subst.
+    econstructor ; [ | now econstructor].
+    econstructor ; [ | eassumption].
+    eapply IHHred ; tea.
+    econstructor ; [ eassumption| now symmetry].
+  - destruct HGen as [A' [Heq ???? Hconv HGen]] ; subst.
+    econstructor ; tea ; try now econstructor.
+    econstructor ; [ | eassumption].
+    eapply IHHred ; [ | eassumption].
+    now econstructor ; [ | symmetry].
+  - destruct HGen as [A' [Heq ???? Hconv HGen]] ; subst.
+    now econstructor ; tea.
+  - destruct HGen as [A' [Heq ???? Hconv [A'' [[Heq' ?] Hconv']]]] ; subst.
+    now econstructor ; tea.
+  - destruct HGen as [A' [Heq ?? Hconv HGen]] ; subst.
+    econstructor ; tea ; try now econstructor.
+    econstructor ; [ | eassumption].
+    eapply IHHred ; [ | eassumption].
+    now econstructor ; [ | symmetry].
+  - destruct HGen as [A' [Heq ?? Hconv HGen]] ; subst.
+    econstructor ; tea ; try now econstructor.
+    econstructor ; [ | eassumption].
+    eapply IHHred ; [ | eassumption].
+    now econstructor ; [ | symmetry].
+  - destruct HGen as [A' [Heq ???? Hconv HGen]] ; subst.
+    now econstructor ; tea.
+  - destruct HGen as [A' [Heq ??????]] ; subst.
+    now econstructor ; tea.
+  - destruct HGen as [X [Heq HnSucc Hconv HGen]] ; subst.
+    econstructor.
+    assert (Hyp :  [Γ |-[ de ] n ≅ n' : tNat ]< wl > -> [Γ |-[ de ] nSucc k n ≅ nSucc k n' : tNat ]< wl >).
+    { clear ; intros H ; induction k ; [now eauto | ].
+      cbn ; now econstructor.
+    }
+    assert (Hyp2 : forall X n, termGenData2 wl Γ (tSucc n) X -> ∑ X', [Γ |-[ de ] X' ≅ X]< wl > × (termGenData2 wl Γ n X')).
+    { clear ; intros X n Hyp ; cbn in *.
+      destruct Hyp as [X' [[Heq Hn] Hconv HGen]] ; subst.
+      exists X' ; now split.
+    }
+    assert (Hyp3 : forall X, termGenData2 wl Γ (nSucc k n) X -> ∑ X', [Γ |-[ de ] X' ≅ X]< wl > × (termGenData2 wl Γ n X')).
+    { intros X' HGen'.
+      unshelve epose proof (HX := termGen_escape _ _ _ _ _ HGen') ; [now boundary | ].
+      revert X' HX HGen' ; clear - Hyp2 ; induction k ; intros X' HX HGen ; [ exists X' ; split ; eauto | ].
+      1: eapply TypeRefl ; now eapply boundary_tm in HX.
+      cbn in * ; eapply Hyp2 in HGen as [X'' [??]].
+      unshelve epose proof (HX' := termGen_escape _ _ _ _ _ t) ; [now boundary | ].
+      eapply IHk in t as [X''' [??]] ; eauto.
+      exists X''' ; split ; eauto.
+      now etransitivity.
+    }
+    eapply Hyp.
+    specialize (Hyp3 _ HGen) as [X' [Hconv' HGen']].
+    econstructor ; [ eapply (IHHred _ _ HGen') | now etransitivity].
+    Unshelve.
+    eapply termGen_escape ; eauto ; now boundary.
+  - destruct HGen as [X [Heq Hn HX HGen]] ; subst.
+    econstructor ; eauto.
+    now boundary.
+  - destruct HGen as [X [Y [Z [Heq Hp]]]] ; subst.
+    unshelve econstructor ; [exact Y | ].
+    econstructor ; [ | eassumption].
+    eapply IHHred ; [ | eassumption].
+    now econstructor ; [ | symmetry].
+  - destruct HGen as [X [Y [Z [Heq Hp Hconv [??]]]]] ; subst.
+    eapply sig_ty_inj in Hconv ; destruct Hconv.
+    econstructor ; [ | now symmetry].
+    econstructor ; eauto.
+  - destruct HGen as [X [Y [Z [Heq Hp]]]] ; subst.
+    econstructor.
+    econstructor ; [ | eassumption].
+    eapply IHHred ; [ | eassumption].
+    now econstructor ; [ | symmetry].
+  - destruct HGen as [X [Y [Z [Heq Hp Hconv [??]]]]] ; subst.
+    eapply sig_ty_inj in Hconv ; destruct Hconv.
+    enough [Γ |- Y[(tFst (tPair A0 B a b))..] ≅ B[(tFst (tPair A0 B a b))..]]< wl > as K.
+    1: econstructor ; [ | now symmetry] ; now econstructor ; tea.
+    eapply typing_subst1 ; [ | now symmetry].
+    eapply TermConv; refold. 2: now symmetry.
+    now eapply TermRefl; refold; gen_typing.
+  - destruct HGen as [X [Heq ?????? Hconv [???]]] ; subst.
+    destruct (id_ty_inj Hconv).
+    econstructor ; tea.
+    + econstructor ; [ | now symmetry] ; now auto.
+    + econstructor ; [ | now symmetry].
+      etransitivity ; [now symmetry | eassumption].
+    + econstructor ; now symmetry.
+  - destruct HGen as [X [Heq ?????? Hconv HGen]] ; subst.
+    econstructor ; tea.
+    all: try (now eapply TermRefl + now eapply TypeRefl) ; tea.
+    econstructor ; [ | eassumption].
+    eapply IHHred ; [ | eassumption].
+    econstructor ; [ eassumption | now symmetry].
+Qed.    
+
 Theorem subject_reduction_one wl Γ A t t' :
     [Γ |- t : A]< wl > ->
     [t ⤳ t']< wl > ->
     [Γ |- t ≅ t' : A]< wl >.
 Proof.
   intros Hty Hred.
-  destruct (termGen' _ _ _ _ Hty) as [A' [tG Hconv]].
-  induction tG in Hred, Hconv, A |- *.
-  all: try (now inversion Hred).
-  - inversion Hred.
-    + subst.      
-      econstructor ; [ | eassumption].
-      pose proof (boundary_tm _ _ _ _ t).
-      eapply prod_ty_inv in H.
-      econstructor ; eauto.
-      1: 
-      Check eta_expand.
-  
-  intros Hty Hred.
-  induction Hred in Hty, A |- *.
-  - apply termGen' in Hty as (?&((?&?&[-> Hty])&Heq)).
-    apply termGen' in Hty as (?&((?&[->])&Heq')).
-    eapply prod_ty_inj in Heq' as [? HeqB].
-    econstructor.
-    1: econstructor ; gen_typing.
-    etransitivity ; tea.
-    eapply typing_subst1 ; tea.
-    now econstructor.
-  - apply termGen' in Hty as (?&((?&?&[->])&Heq)).
-    econstructor ; tea.
-    econstructor.
-    + now eapply IHHred.
-    + now econstructor.
-  - apply termGen' in Hty as [?[[->]?]].
-    econstructor; tea.
-    econstructor.
-    1-3: now econstructor.
-    now eapply IHHred.
-  - apply termGen' in Hty as [?[[->]?]].
-    now do 2 econstructor.
-  - apply termGen' in Hty as [?[[-> ???(?&[->]&?)%termGen']?]].
-    now do 2 econstructor.
-  - apply termGen' in Hty as [?[[->]?]].
-    econstructor ; tea.
-    econstructor.
-    1: now econstructor.
-    now eapply IHHred.
-  - apply termGen' in Hty as [? [[?[?[->]]]]].
-    eapply TermConv; tea ; refold.
-    now econstructor.
-  - apply termGen' in Hty as [?[[?[?[-> h]]]]].
-    apply termGen' in h as [?[[->] u]].
-    destruct (sig_ty_inj _ _ _ _ _ u).
-    eapply TermConv; refold.
-    2: etransitivity;[|tea]; now symmetry.
-    econstructor; tea.
-  - apply termGen' in Hty as [? [[?[?[->]]]]].
-    eapply TermConv; tea ; refold.
-    now econstructor.
-  - apply termGen' in Hty as [?[[?[?[-> h]]]]].
-    apply termGen' in h as [?[[->] u]].
-    destruct (sig_ty_inj _ _ _ _ _ u).
-    assert [Γ |- B[(tFst (tPair A0 B a b))..] ≅ A]< wl >.
-    1:{ etransitivity; tea. eapply typing_subst1; tea.
-      eapply TermConv; refold. 2: now symmetry.
-      eapply TermRefl; refold; gen_typing.
-    }
-    eapply TermConv; tea; refold.
-    now econstructor.
-  - apply termGen' in Hty as [? [[-> ????? h]]].
-    apply termGen' in h as [? [[->] h']].
-    pose proof h' as []%id_ty_inj.
-    econstructor; tea.
-    econstructor; tea.
-    1: now econstructor.
-    + eapply TermConv; refold; [etransitivity; tea|]; now symmetry.
-    + eapply TermConv; refold; now symmetry.
-  - apply termGen' in Hty as [? [[-> ????? h]]].
-    econstructor; tea; econstructor; tea.
-    all: now first [eapply TypeRefl |eapply TermRefl| eauto].
-  Qed.
+  pose proof (termGen_alt wl Γ t A Hty) as [d Hd].
+  eapply convtm_over_tree with d.
+  intros wl' Ho.
+  specialize (Hd wl' Ho) as [X [HGen [Heq | Hconv]]] ; subst.
+  2: econstructor ; [ | eassumption].
+  all: eapply subject_reduction_one_aux ; eauto.
+  2,4: eapply red_Ltrans ; eauto ; now eapply over_tree_le.
+  2: econstructor ; [ | now symmetry].
+  all: eapply TypingDecl_trans ; [now eapply over_tree_le | eassumption].
+Qed.
 
 
-  Theorem subject_reduction_one_type wl Γ A A' :
+Theorem subject_reduction_one_type wl Γ A A' :
   [Γ |- A]< wl > ->
   [A ⤳ A']< wl > ->
   [Γ |- A ≅ A']< wl >.
 Proof.
   intros Hty Hred.
+  remember A.
   destruct Hred.
-  all: inversion Hty ; subst ; clear Hty ; refold.
-  all: econstructor.
-  all: eapply subject_reduction_one ; tea.
+  all: rewrite Heqt in Hty ; induction Hty.
+  all: try now inversion Heqt.
+  all: try (econstructor ; eapply subject_reduction_one ; [ now rewrite Heqt | now econstructor]).
+  all: try now (eapply ϝTypeConv ; [eapply IHHty1 | eapply IHHty2] ; eauto ; now eapply red_Ltrans ; [eapply LCon_le_step, wfLCon_le_id | ]).
+  eapply ϝTypeConv ; [eapply IHHty1 | eapply IHHty2] ; eauto.
   all: now econstructor.
 Qed.
 
-Theorem subject_reduction Γ t t' A :
+
+Theorem subject_reduction wl Γ t t' A :
   [Γ |- t : A]< wl > ->
   [t ⤳* t']< wl > ->
   [Γ |- t ⤳* t' : A]< wl >.
@@ -939,15 +1174,19 @@ Lemma Uterm_isType wl Γ A :
   isType A.
 Proof.
   intros Hty Hwh.
-  destruct Hwh.
+  eapply termGen_alt in Hty as [d Hd] ; cbn in *.
+  epose proof (Ho := DTree_leftmost_over _ d).
+  specialize (Hd _ Ho) as [A' [HGen [Heq | Hconv]]] ; subst.
+  all: destruct Hwh.
   all: try solve [now econstructor].
-  all: exfalso.
-  all: eapply termGen' in Hty ; cbn in *.
-  all: prod_hyp_splitter ; try easy.
+  all: exfalso ; cbn in *.
+  all: prod_hyp_splitter.
+  all: try (now inversion e).
+  all: try (now inversion HGen).
   all: subst.
   all:
     match goal with
-      H : [_ |-[de] _ ≅ U] |- _ => unshelve eapply ty_conv_inj in H as Hconv
+      H : [_ |-[de] _ ≅ U]< _ > |- _ => unshelve eapply ty_conv_inj in H as Hconv
     end.
   all: try now econstructor.
   all: try now cbn in Hconv.
@@ -958,9 +1197,10 @@ Lemma type_isType wl Γ A :
   whnf A ->
   isType A.
 Proof.
-  intros [] ; refold; cycle -1.
-  1: intros; now eapply Uterm_isType.
-  all: econstructor.
+  induction 1 ; refold; cycle -1.
+  all: try now econstructor.
+  2: intros; now eapply Uterm_isType.
+  now eauto.
 Qed.
 
 Lemma fun_isFun wl Γ A B t:
@@ -969,70 +1209,114 @@ Lemma fun_isFun wl Γ A B t:
   isFun t.
 Proof.
   intros Hty Hwh.
-  destruct Hwh.
+  eapply termGen_alt in Hty as [d Hd] ; cbn in *.
+  epose proof (Ho := DTree_leftmost_over _ d).
+  specialize (Hd _ Ho) as [A' [HGen [Heq | Hconv]]] ; subst ; cbn in *.
+  all: destruct Hwh.
   all: try now econstructor.
-  all: eapply termGen' in Hty ; cbn in *.
-  all: exfalso.
+  all: exfalso ; cbn in *.
   all: prod_hyp_splitter ; try easy.
+  all: try (now inversion e).
+  all: try (now inversion HGen).
   all: subst.
   all:
     match goal with
-      H : [_ |-[de] _ ≅ tProd _ _]< wl > |- _ => unshelve eapply ty_conv_inj in H as Hconv
+      H : [_ |-[de] _ ≅ tProd _ _]< _ > |- _ => unshelve eapply ty_conv_inj in H as Hconv
     end.
   all: try now econstructor.
   all: now cbn in Hconv.
 Qed.
 
-Lemma nat_isNat Γ t:
+
+Lemma nat_isNat wl Γ t:
   [Γ |-[de] t : tNat]< wl > ->
   whnf t ->
   isNat t.
 Proof.
   intros Hty Hwh.
-  destruct Hwh.
+  eapply termGen_alt in Hty as [d Hd] ; cbn in *.
+  epose proof (Ho := DTree_leftmost_over _ d).
+  specialize (Hd _ Ho) as [A' [HGen [Heq | Hconv]]] ; subst.
+  all: destruct Hwh.
   all: try now econstructor.
-  all: eapply termGen' in Hty ; cbn in *.
-  all: exfalso.
+  all: exfalso ; cbn in *.
   all: prod_hyp_splitter ; try easy.
+  all: try (now inversion e).
+  all: try (now inversion HGen).
   all: subst.
   all:
     match goal with
-      H : [_ |-[de] _ ≅ tNat]< wl > |- _ => unshelve eapply ty_conv_inj in H as Hconv
+      H : [_ |-[de] _ ≅ tNat]< _ > |- _ => unshelve eapply ty_conv_inj in H as Hconv
     end.
   all: try now econstructor.
   all: now cbn in Hconv.
 Qed.
 
-Lemma empty_isEmpty Γ t:
+Lemma bool_isBool wl Γ t:
+  [Γ |-[de] t : tBool]< wl > ->
+  whnf t ->
+  isBool t.
+Proof.
+  intros Hty Hwh.
+  eapply termGen_alt in Hty as [d Hd] ; cbn in *.
+  epose proof (Ho := DTree_leftmost_over _ d).
+  specialize (Hd _ Ho) as [A' [HGen [Heq | Hconv]]] ; subst.
+  all: destruct Hwh.
+  all: try now econstructor.
+  all: exfalso ; cbn in *.
+  all: prod_hyp_splitter ; try easy.
+  all: try (now inversion e).
+  all: try (now inversion HGen).
+  all: subst.
+  all:
+    match goal with
+      H : [_ |-[de] _ ≅ tBool]< _ > |- _ => unshelve eapply ty_conv_inj in H as Hconv
+    end.
+  all: try now econstructor.
+  all: now cbn in Hconv.
+Qed.
+
+Lemma empty_isEmpty wl Γ t:
   [Γ |-[de] t : tEmpty]< wl > ->
   whnf t ->
   whne t.
 Proof.
   intros Hty Hwh.
-  destruct Hwh ; try easy.
-  all: eapply termGen' in Hty ; cbn in *.
-  all: exfalso.
+  eapply termGen_alt in Hty as [d Hd] ; cbn in *.
+  epose proof (Ho := DTree_leftmost_over _ d).
+  specialize (Hd _ Ho) as [A' [HGen [Heq | Hconv]]] ; subst.
+  all: destruct Hwh ; try easy.
+  all: exfalso ; cbn in *.
   all: prod_hyp_splitter ; try easy.
+  all: try (now inversion e).
+  all: try (now inversion HGen).
   all: subst.
   all:
     match goal with
-      H : [_ |-[de] _ ≅ tEmpty]< wl > |- _ => unshelve eapply ty_conv_inj in H as Hconv
+      H : [_ |-[de] _ ≅ tEmpty]< _ > |- _ => unshelve eapply ty_conv_inj in H as Hconv
     end.
   all: try now econstructor.
   all: now cbn in Hconv.
 Qed.
 
-Lemma id_isId Γ t {A x y} :
+Lemma id_isId wl Γ t {A x y} :
   [Γ |-[de] t : tId A x y]< wl > ->
   whnf t ->
   whne t + ∑ A' x', t = tRefl A' x'.
 Proof.
-  intros Hty wh; destruct wh; try easy.
-  all: eapply termGen' in Hty; cbn in *; exfalso.
-  all: prod_hyp_splitter ; try easy; subst.
+  intros Hty wh.
+  eapply termGen_alt in Hty as [d Hd] ; cbn in *.
+  epose proof (Ho := DTree_leftmost_over _ d).
+  specialize (Hd _ Ho) as [A' [HGen [Heq | Hconv]]] ; subst.
+  all: destruct wh ; try easy.
+  all: exfalso ; cbn in *.
+  all: prod_hyp_splitter ; try easy.
+  all: try (now inversion e).
+  all: try (now inversion HGen).
+  all: subst.
   all:
     match goal with
-      H : [_ |-[de] _ ≅ tId _ _ _]< wl > |- _ => unshelve eapply ty_conv_inj in H as Hconv
+      H : [_ |-[de] _ ≅ tId _ _ _]< _ > |- _ => unshelve eapply ty_conv_inj in H as Hconv
     end; try econstructor.
   all: now cbn in Hconv.
 Qed.
@@ -1044,111 +1328,16 @@ Lemma neutral_isNeutral wl Γ A t :
   whnf t ->
   whne t.
 Proof.
-  intros (?&Hgen&Hconv)%termGen' HwA Hwh.
-  set (iA := NeType HwA).
-  destruct Hwh ; cbn in * ; try easy.
+  intros Hty HwA Hwh.
+  eapply termGen_alt in Hty as [d Hd] ; cbn in *.
+  epose proof (Ho := DTree_leftmost_over _ d).
+  specialize (Hd _ Ho) as [A' [HGen [Heq | Hconv]]] ; subst.
+  all: set (iA := NeType HwA).
+  all: destruct Hwh ; cbn in * ; try easy.
   all: exfalso.
   all: prod_hyp_splitter.
-  all: subst.
-  all: unshelve eapply ty_conv_inj in Hconv ; tea.
+  all: subst ; try (now inversion HwA).
+  all: try unshelve eapply ty_conv_inj in Hconv ; tea.
   all: try now econstructor.
   all: now cbn in Hconv.
 Qed.
-  Lemma isType_WRed_to_Red : forall (wl : wfLCon) (Γ : context) (T : term) l,
-        isType T ->
-        W[ Γ ||-< l > T ]< wl > ->
-        [ Γ ||-< l > T ]< wl >.
-  Proof.
-    intros ???? [] ; intros Hyp.
-    - destruct s.
-      assert (forall d : DTree wl,
-                 Ssig (fun wl' : wfLCon => over_tree wl wl' d)).
-      { clear.
-        induction d.
-        - exists k.
-          now eapply wfLCon_le_id.
-        - cbn.
-          clear IHd2 ; destruct IHd1 as [wl' Hyp].
-          exists wl'.
-          pose (H := over_tree_le Hyp _ _ (in_here_l _)).
-          now rewrite (decidInLCon_true H).
-      }
-      specialize (H (WT _ Hyp)) as [wl' Ho].
-      pose proof (Red := WRed _ Hyp _ Ho).
-      eapply invLRU in Red ; destruct Red.
-      eapply LRU_.
-      econstructor.
-      1: eassumption.
-      now Wescape ; gen_typing.
-      eapply redtywf_refl ; now Wescape.
-    - assert (WHA : W[ Γ ||-< l > A ]< wl >).
-      { exists (WT _ Hyp).
-        intros wl' Ho ; destruct Hyp as [d Hd] ; cbn in * ; specialize (Hd wl' Ho).
-        eapply invLRΠ in Hd.
-        destruct Hd as [X Y red ????]. Print whnf.
-        pose proof (Heq := redtywf_whnf red (whnf_tProd)) ; inversion Heq ; subst ; clear Heq.
-        destruct polyRed.
-        erewrite <- (wk_id_ren_on Γ X).
-        eapply shpRed.
-        1: now eapply wfLCon_le_id.
-        gen_typing.
-      }
-      assert (WHB : W[ Γ,, A ||-< l > B ]< wl >) by admit.
-      eapply LRPi'.
-      econstructor ; [ .. | unshelve econstructor].
-      1: eapply redtywf_refl ; now Wescape.
-      1,2: econstructor ; now Wescape.
-      5,6: now Wescape.
-      + econstructor ; now Wescape.
-      + 
-      
-      { eapply (TreeSplit (WT _ Hyp)).
-        intros wl' Ho ; destruct Hyp as [d Hd] ; cbn in * ; specialize (Hd wl' Ho).
-        eapply invLRΠ in Hd.
-        destruct Hd as [X Y red ????]. Print whnf.
-        pose proof (Heq := redtywf_whnf red (whnf_tProd)) ; inversion Heq ; subst ; clear Heq.
-        destruct polyRed.
-        About FundTmVar.
-        Print FundTm.
-        About PiValidCod.
-        erewrite <- (wk_id_ren_on Γ X).
-        eapply shpRed.
-        1: now eapply wfLCon_le_id.
-        
-        
-        Print wk_id.
-        Unset Printing Notations. Print wk_well_wk.
-
-      Wescape.
-      eapply LRPi'.
-      cbn.
-      econstructor.
-      1: now eapply redtywf_refl.
-      gen_typing.
-      1: as.
-
-      About LRLRΠ_.
-
-      ∑ wl', [ Γ ||-< l > U ]< wl' >).
-      { destruct Hyp as [d Hd].
-        unshelve eexists _ ; [ | eapply Hd].
-        Print DTree.
-        all: clear Hd.
-        revert wl d.
-        refine (fix f wl d := match d as d0 in (DTree _) return wfLCon with
-                              | leaf _ => _
-                              | @ϝnode _ n ne dt df => _
-                              end).
-                             ; induction d.
-        + assumption.
-        + unshelve eapply wfLCons ; [exact IHd1 | .. ].
-          exact IHd1.
-        + now eapply wfLCon_le_id.
-        + cbn.
-        
-      About WUnivEq.
-      pose (wl' := DTree_path _ _ (WT _ Hyp)).
-      About DTree_path.
-      Print invLRU.
-      eapply LRU_.
-      econstructor.

@@ -165,6 +165,11 @@ Inductive isNat : term -> Type :=
   | SuccNat {t} : isNat (tSucc t)
   | NeNat {n} : whne n -> isNat n.
 
+Inductive isBool : term -> Type :=
+  | TrueBool : isBool tTrue
+  | FalseBool : isBool tFalse
+  | NeBool {n} : whne n -> isBool n.
+
 Inductive isPair : term -> Type :=
   | PairPair {A B a b} : isPair (tPair A B a b)
   | NePair {p} : whne p -> isPair p.
@@ -196,8 +201,15 @@ Definition isNat_whnf t (i : isNat t) : whnf t :=
   | NeNat n => whnf_whne n
   end.
 
-#[global] Hint Resolve isPosType_isType isType_whnf isFun_whnf isNat_whnf isPair_whnf : gen_typing.
-#[global] Hint Constructors isPosType isType isFun isNat : gen_typing.
+Definition isBool_whnf t (i : isBool t) : whnf t :=
+  match i with
+  | TrueBool => whnf_tTrue
+  | FalseBool => whnf_tFalse
+  | NeBool n => whnf_whne n
+  end.
+
+#[global] Hint Resolve isPosType_isType isType_whnf isFun_whnf isNat_whnf isBool_whnf isPair_whnf : gen_typing.
+#[global] Hint Constructors isPosType isType isFun isNat isBool : gen_typing.
 
 (** ** Canonical forms *)
 
