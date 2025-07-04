@@ -296,3 +296,80 @@ Section RenWhnf.
 End RenWhnf.
 
 #[global] Hint Resolve whne_ren whnf_ren isType_ren isPosType_ren isFun_ren isCanonical_ren : gen_typing.
+
+
+Inductive alphane (wl : wfLCon) (n : nat) : term -> Type :=
+  | alphane_tRel (ne : not_in_LCon wl n) : alphane wl n (tAlpha (nat_to_term n))
+  | alphane_tApp {t u} : alphane wl n t -> alphane wl n (tApp t u)
+  | alphane_tNatElim {P hz hs m} : alphane wl n m -> alphane wl n (tNatElim P hz hs m)
+  | alphane_tBoolElim {P hz hs m} : alphane wl n m -> alphane wl n (tBoolElim P hz hs m)
+  | alphane_tEmptyElim {P e} : alphane wl n e -> alphane wl n (tEmptyElim P e)
+  | alphane_tFst {p} : alphane wl n p -> alphane wl n (tFst p)
+  | alphane_tSnd {p} : alphane wl n p -> alphane wl n (tSnd p)
+  | alphane_tIdElim {A x P hr y e} : alphane wl n e -> alphane wl n (tIdElim A x P hr y e)
+  | alphane_containsne {k t} : alphane wl n t -> alphane wl n (tAlpha (nSucc k t)).
+
+
+Lemma nSuccalphaneinj {wl n k k' t t'} :
+  alphane wl n t -> nSucc k t = nSucc k' t' -> t' = nSucc (k - k') t.
+Proof.
+  revert k' t t' ; induction k ; intros k' t t' Hne Heq.
+  - cbn in * ; revert t t' Hne Heq.
+    induction k' ; cbn in * ; intros ; [now auto | ].
+    subst ; now inversion Hne.
+  - destruct k' ; cbn in * ; [now auto | ].
+    inversion Heq.
+    now eapply IHk.
+Qed.
+
+Lemma alphane_ren wl n t (ρ : nat -> nat) : alphane wl n t -> alphane wl n (t⟨ρ⟩).
+Proof.
+  induction 1 ; cbn.
+  all: try now econstructor.
+  - cbn ; unfold nat_to_term ; rewrite nSucc_ren ; cbn.
+    now econstructor.
+  - rewrite nSucc_ren ; now econstructor.
+Qed.
+
+Lemma alphane_Ltrans {wl wl' n t} (f : wl' ≤ε wl) :
+  alphane wl n t -> (not_in_LCon (pi1 wl') n) -> alphane wl' n t.
+Proof.
+  intros Hyp ; revert wl' f ; induction Hyp ; intros wl' f Hne.
+  all: now econstructor.
+Qed.
+
+Lemma alphane_backtrans  {wl wl' n t} (f : wl' ≤ε wl) :
+  alphane wl' n t -> alphane wl n t.
+Proof.
+  intros Hyp ; revert wl f ; induction Hyp ; intros wl f.
+  all: try now econstructor.
+  econstructor.
+  now eapply not_in_LCon_le_not_in_LCon.
+Qed.
+
+Lemma alphane_whne_false {wl n t} :
+  whne t -> alphane wl n t -> False.
+Proof.
+  induction 1 ; intros Hyp ; try now inversion Hyp.
+  - inversion Hyp ; subst.
+    + symmetry in H1 ; eapply nSuccneinj in H1 ; auto.
+      destruct (n0 - n) ; cbn in * ; subst ; [now inversion H | ].
+      now inversion H1.
+    + eapply nSuccalphaneinj in H0; eauto.
+      destruct (k - n0) ; cbn in * ; subst ; auto.
+      now inversion H.
+Qed.    
+
+Lemma alphane_isNat_false {wl n t} :
+  alphane wl n t -> isNat t -> False.
+Proof.
+  intros H ; induction 1 ; try now inversion H.
+  now eapply alphane_whne_false.
+Qed.
+
+Lemma alphane_nf_false {wl n t} :
+  alphane wl n t -> whnf t -> False.
+Proof.
+  intros H ; induction 1 ; try now inversion H.
+  now eapply alphane_whne_false.
+Qed.

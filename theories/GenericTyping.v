@@ -433,9 +433,6 @@ Section GenericTyping.
       [|-Γ]< l > -> [Γ |- tTrue ≅ tTrue : tBool]< l > ;
     convtm_false {l Γ} :
       [|-Γ]< l > -> [Γ |- tFalse ≅ tFalse : tBool]< l > ;
-    convtm_alphacong {l Γ} {n n'} :
-          [ Γ |- n ≅ n' : tNat]< l > ->
-          [ Γ |- tAlpha n ≅ tAlpha n' : tBool]< l >;
     convtm_alpha {l Γ n b} :
         [ |- Γ ]< l > ->
         in_LCon (pi1 l) n b ->
@@ -673,7 +670,7 @@ Class GenericTypingProperties `(ta : tag)
 #[export] Hint Resolve wft_wk wft_U wft_prod wft_sig wft_Id | 2 : gen_typing.
 #[export] Hint Resolve ty_wk ty_var ty_prod ty_lam ty_app ty_nat ty_bool ty_empty ty_zero ty_succ ty_natElim ty_true ty_false ty_alpha ty_boolElim ty_emptyElim ty_sig ty_pair ty_fst ty_snd ty_Id ty_refl ty_IdElim| 2 : gen_typing.
 #[export] Hint Resolve convty_wk convty_uni convty_prod convty_sig convty_Id | 2 : gen_typing.
-#[export] Hint Resolve convtm_wk convtm_prod convtm_eta convtm_nat convtm_bool convtm_empty convtm_zero convtm_succ convtm_true convtm_false convtm_alphacong convtm_eta_sig convtm_Id convtm_refl | 2 : gen_typing.
+#[export] Hint Resolve convtm_wk convtm_prod convtm_eta convtm_nat convtm_bool convtm_empty convtm_zero convtm_succ convtm_true convtm_false  convtm_eta_sig convtm_Id convtm_refl | 2 : gen_typing.
 #[export] Hint Resolve convneu_wk convneu_var convneu_app convneu_natElim convneu_emptyElim convneu_fst convneu_snd convneu_IdElim | 2 : gen_typing.
 #[export] Hint Resolve redty_ty_src redtm_ty_src | 2 : gen_typing.
 (* Priority 4 *)

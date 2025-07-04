@@ -82,6 +82,8 @@ Inductive RedClosureAlg {l} : term -> term -> Type :=
 Ltac inv_whne :=
   match goal with [ H : whne _ |- _ ] => inversion H end.
 
+Ltac inv_alphane :=
+  match goal with [ H : alphane _ _ _ |- _ ] => inversion H end.
 
 
 Lemma whne_nored {l} n u :
@@ -112,10 +114,38 @@ Proof.
   intros nf red.
   induction red in nf |- *.
   all: try (inversion nf; subst; inv_whne; subst; apply IHred; now constructor).
-  all: inversion nf; subst; inv_whne; subst; try now inv_whne.
+  all: inversion nf; subst ; inv_whne; subst; try now inv_whne.
   - eapply nSuccneinj in H0 ; auto ; subst.
     destruct (n0 - k) ; cbn in * ; now apply IHred ; constructor.
   - now eapply containsnenattoterm.
+Qed.
+
+Lemma alphane_nored {l n} m u :
+  alphane l n m -> [m ⤳ u]< l > -> False.
+Proof.
+  intros ne red.
+  induction red in ne |- *.
+  all: inversion ne ; subst ; clear ne.
+  2: auto.
+  all: try now inv_alphane.
+  - unfold nat_to_term in H0.
+    assert (Hyp : ∑ k', n0 = nSucc k' tZero).
+    { clear - H0.
+      revert n H0 ; induction k ; cbn ; intros ; [now exists n | ].
+      destruct n ; cbn in * ; [now inversion H0 | ].
+      inversion H0 ; subst.
+      now eapply IHk.
+    }
+    destruct Hyp as [k' Heq] ; subst.
+    destruct k' ; cbn in * ; now inversion red.
+  - eapply nSuccalphaneinj in H ; eauto ; subst.
+    destruct (k0 - k) ; cbn in * ; [now apply IHred | ].
+    now inversion red.
+  - eapply notinLConnotinLCon ; [eassumption | ].
+    eapply nattoterminj in H0 ; subst.
+    eassumption.
+  - pose proof (Hyp := nSuccalphaneinj H0 H).
+    destruct (k - n0) ; cbn in * ; [subst ; now inv_alphane | now inversion Hyp].
 Qed.
 
 (** *** Determinism of reduction *)
@@ -344,3 +374,55 @@ Proof.
   now eapply red_Ltrans.
 Qed.
   
+Lemma alphane_disjunction_red {wl : wfLCon} {t t' n b} {ne : not_in_LCon wl n} :
+  [ t ⤳ t' ]< wl ,,l (ne, b) > ->
+  ([ t ⤳ t' ]< wl >) + (alphane wl n t).
+Proof.
+  intros Hyp ; induction Hyp.
+  all: try now (left ; econstructor).
+  all: try now (destruct IHHyp ; [ now left ; econstructor | now right ; econstructor]).
+  destruct (PeanoNat.Nat.eq_dec n0 n) ; [subst | ].
+  - right ; now econstructor.
+  - left.
+    enough (in_LCon wl n0 b0).
+    + now econstructor.
+    + inversion i ; subst.
+      * now now exfalso.
+      * assumption.
+Qed.
+
+Lemma alphane_disjunction_redalg {wl : wfLCon} {t t' n b} {ne : not_in_LCon wl n} :
+  [ t ⤳* t' ]< wl ,,l (ne, b) > ->
+  ([ t ⤳* t' ]< wl >) + (∑ t'', [ t ⤳* t'' ]< wl > × (alphane wl n t'')).
+Proof.
+  intros Hyp ; induction Hyp.
+  - left ; now econstructor.
+  - pose proof (Help := alphane_disjunction_red o).
+    destruct Help ; [ | right ; eexists ; split ; [ | eassumption] ; now constructor].
+    destruct IHHyp as [ | [t'' [Hred Ht'']]] ; [left ; now econstructor | ].
+    right ; exists t'' ; split ; tea.
+    now econstructor.
+Qed.
+
+Lemma red_alphane {l n} t u : [t ⤳* u]< l > -> alphane l n t -> t = u.
+Proof.
+  intros [] ?.
+  1: reflexivity.
+  exfalso.
+  eauto using alphane_nored.
+Qed.
+
+Lemma whred_red_alphane {l n} t u u' :
+  alphane l n u ->
+  [t ⤳* u]< l > -> [t ⤳* u']< l > ->
+  [u' ⤳* u]< l >.
+Proof.
+  intros whnf red red'.
+  induction red in whnf, u', red' |- *.
+  - eapply red_alphane in red' as -> ; tea.
+    now econstructor.
+  - destruct red' as [? | ? ? ? o'].
+    + now econstructor.
+    + unshelve epose proof (ored_det o o') as <-.
+      now eapply IHred.
+Qed.

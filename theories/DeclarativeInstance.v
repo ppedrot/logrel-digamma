@@ -637,7 +637,6 @@ Module DeclarativeTypingProperties.
   - now econstructor.
   - now econstructor.
   - now econstructor.
-  - now econstructor.
   - intros ; now eapply ConvTermDecl_trans.
   - intros.
     now eapply ϝTermConv.
