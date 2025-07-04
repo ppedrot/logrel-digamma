@@ -27,19 +27,6 @@ Definition VRel@{i j | i < j +} `{ta : tag} `{!WfContext ta} {wl : wfLCon} :=
                         (wfΔ : [|- Δ ]< wl' >), validSubst Δ wl' σ f wfΔ -> Type@{i})
     , Type@{j}.
 
-(*  Definition VRel@{i j | i < j +} `{ta : tag} `{!WfContext ta} {wl : wfLCon} :=
-    forall
-      (Γ : context)
-      (Δ : context)
-      (wl' : wfLCon)
-      (σ : nat -> term)
-      (f : wl' ≤ε wl)
-      (wfΔ : [|- Δ]< wl' >)
-      (validSubst: Type@{i})
-      (eqSubst: (nat -> term) -> validSubst -> Type@{i})
-      
-    , Type@{j}.
- *)
 
 (* A VPack contains the data corresponding to the codomain of VRel seen as a functional relation *)
 
@@ -163,21 +150,6 @@ Section snocValid.
     - exact (W[ Δ ||-< l > σ var_zero ≅ σ' var_zero : A[↑ >> σ] | validTy vA f wfΔ (projT1@{u k} vσ) ]< wl' >).
   Defined.
   
-(*   Record snocValidSubst {Δ : context} {wl' : wfLCon} {σ : nat -> term} {f : wl' ≤ε wl}
-    {wfΔ : [|- Δ]< wl' >} :=
-   { validTail : [ VΓ | Δ ||-v ↑ >> σ : Γ | wfΔ | f ]< wl > ;
-     validHead : W[ Δ ||-< l > σ var_zero : A[↑ >> σ] | validTy vA f wfΔ validTail ]< wl' >
-    }.
-
-  Arguments snocValidSubst : clear implicits.
-
-  Record snocEqSubst {Δ : context} {wl' : wfLCon} {σ σ' : nat -> term} {f : wl' ≤ε wl}
-    {wfΔ : [|- Δ]< wl' >} {vσ : snocValidSubst Δ wl' σ f wfΔ} : Type :=
-    {
-      eqTail : [ VΓ | Δ ||-v ↑ >> σ ≅ ↑ >> σ' : Γ | wfΔ | validTail vσ | f ]< wl > ;
-      eqHead : W[ Δ ||-< l > σ var_zero ≅ σ' var_zero : A[↑ >> σ] | validTy vA f wfΔ (validTail vσ) ]< wl' >
-    }.
- *)
 
   Definition snocVPack := Build_VPack@{u (* max(u,k) *)} wl (Γ ,, A) snocValidSubst (@snocEqSubst).
   
@@ -224,17 +196,6 @@ Inductive VR@{i j k l} `{ta : tag}
                           (transport (Hsub Δ wl' σ f wfΔ) Hyp)),
     VR (Γ ,, A) sub ext.
 
-
-(*
-Definition VREmpty'@{i j k l} `{ta : tag}
-  `{WfContext ta} `{WfType ta} `{Typing ta}
-  `{ConvType ta} `{ConvTerm ta} `{ConvNeuConv ta}
-  `{RedType ta} `{RedTerm ta} {wl : wfLCon} : VR@{i j k l} (wl := wl) ε emptyValidSubst@{k} emptyEqSubst.
-Proof.
-  eapply VREmpty.
-  - intros ; now econstructor.
-  - intros ; now econstructor.
-Defined. *)
 
 Definition VRSnoc'@{i j k l} `{ta : tag}
   `{WfContext ta} `{WfType ta} `{Typing ta}
@@ -491,25 +452,6 @@ Section Inductions.
       exact Hyp.
   Defined.
   
- (* Lemma invValidity {wl Γ} (VΓ : [||-v Γ]< wl >) :
-    match Γ as Γ return [||-v Γ]< wl > -> Type with
-    | nil => fun VΓ₀ => VΓ₀ = validEmpty
-    | (A :: Γ)%list => fun VΓ₀ =>
-      ∑ l (VΓ : [||-v Γ]< wl >) (VA : [Γ ||-v< l > A | VΓ]< wl >), VΓ₀ = validSnoc VΓ VA
-    end VΓ.
-  Proof.
-    pattern Γ, VΓ. apply validity_rect.
-    - reflexivity.
-    - intros; do 3 eexists; reflexivity.
-  Qed. *)
-
- (* Lemma invValidityEmpty {wl} (VΓ : [||-v ε]< wl >) : VΓ = validEmpty.
-  Proof. apply (invValidity VΓ). Qed.
-
-  Lemma invValiditySnoc {wl Γ A} (VΓ₀ : [||-v Γ ,, A ]< wl >) :
-      ∑ l (VΓ : [||-v Γ]< wl >) (VA : [Γ ||-v< l > A | VΓ]< wl >), VΓ₀ = validSnoc VΓ VA.
-  Proof. apply (invValidity VΓ₀). Qed.
-*)
 End Inductions.
 
 (* Tactics to instantiate validity proofs in the context with
@@ -582,29 +524,4 @@ Proof.
     cbn in *.
     now unshelve eapply eq.
 Defined.    
-(*
-Lemma test @{i j k l} `{ta : tag}
-  `{WfContext ta} `{WfType ta} `{Typing ta}
-  `{ConvType ta} `{ConvTerm ta} `{ConvNeuConv ta}
-  `{RedType ta} `{RedTerm ta} {wl wl' : wfLCon} (f : wl' ≤ε wl) :
-  forall
-    (Γ : context)
-    (Δ : context)
-    (wl'' : wfLCon)
-    (σ : nat -> term)
-    (f' : wl'' ≤ε wl')
-    (wfΔ : [|- Δ]< wl'' >)
-    (validSubst: Type@{i})
-    (eqSubst: (nat -> term) -> validSubst -> Type@{i}),
-    VR@{i j k l} Γ Δ wl'' σ (f' •ε f) wfΔ validSubst eqSubst ->
-    VR@{i j k l} Γ Δ wl'' σ f' wfΔ validSubst eqSubst.
-Proof.
-  intros * Hyp.
-  induction Hyp as [ | ? ? ? ? wl'' ? f''].
-  - econstructor.
-  - assert ((snocValidSubst@{k i j k l} wl Γ VΓ A l VA Δ wl'' σ f'' wfΔ) =
-              (snocValidSubst@{k i j k l} wl' Γ (VPack_Ltrans f VΓ) A l (Validity_Ltrans f VA) Δ wl'' σ f' wfΔ)).
-    destruct VΓ, VA ; cbn.
-    unfold Validity_Ltrans ; cbn.
-    Set Printing Implicit.
-*)
+

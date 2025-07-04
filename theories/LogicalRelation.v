@@ -747,7 +747,6 @@ Let NatRedInductionType :=
     let ind' := polymorphise ind in
   exact ind').
 
-(* KM: looks like there is a bunch of polymorphic universes appearing there... *)
 Lemma NatRedInduction : NatRedInductionType.
 Proof.
   intros ???? PRed PProp **; split; now apply (_NatRedInduction _ _ _ _ PRed PProp).
@@ -819,7 +818,6 @@ Let NatRedEqInductionType :=
     let ind' := polymorphise ind in
   exact ind').
 
-(* KM: looks like there is a bunch of polymorphic universes appearing there... *)
 Lemma NatRedEqInduction : NatRedEqInductionType.
 Proof.
   intros ???? PRedEq PPropEq **; split; now apply (_NatRedEqInduction _ _ _ _ PRedEq PPropEq).
@@ -888,27 +886,6 @@ Section BoolRedTm.
 Scheme BoolRedTm_mut_rect := Induction for BoolRedTm Sort Type.
 Scheme BoolProp_mut_rect := Induction for BoolProp Sort Type.
 
-(*Combined Scheme _BoolRedInduction from
-  BoolRedTm_mut_rect,
-  BoolProp_mut_rect.
-
-Let _BoolRedInductionType :=
-  ltac:(let ind := fresh "ind" in
-      pose (ind := _BoolRedInduction);
-      let ind_ty := type of ind in
-      exact ind_ty).
-
-Let BoolRedInductionType :=
-  ltac: (let ind := eval cbv delta [_BoolRedInductionType] zeta
-    in _BoolRedInductionType in
-    let ind' := polymorphise ind in
-  exact ind').
-
-(* KM: looks like there is a bunch of polymorphic universes appearing there... *)
-Lemma BoolRedInduction : BoolRedInductionType.
-Proof.
-  intros ???? PRed PProp **; split ; now apply (_BoolRedInduction _ _ _ _ PRed PProp).
-Defined.*)
 
 Definition nf {l Γ A n} {NA : [Γ ||-Bool A]< l > } : @BoolRedTm _ _ _ NA n -> term.
 Proof.
@@ -938,7 +915,6 @@ Section BoolRedTmEq.
     `{RedTerm ta}.
 
   Inductive BoolPropEq {l : wfLCon} {Γ : context} {A: term} {NA : BoolRedTy l Γ A} : term -> term -> Set :=
-  (* KM: plugging in the parameter type directly... Is that ok ? *)
   | trueReq :
     BoolPropEq tTrue tTrue
   | falseReq :
@@ -959,32 +935,6 @@ Section BoolRedTmEq.
 Scheme BoolRedTmEq_mut_rect := Induction for BoolRedTmEq Sort Type.
 Scheme BoolPropEq_mut_rect := Induction for BoolPropEq Sort Type.
 
-(*Combined Scheme _BoolRedInduction from
-  BoolRedTmEq_mut_rect,
-  BoolPropEq_mut_rect.
-
-Combined Scheme _BoolRedEqInduction from
-  BoolRedTmEq_mut_rect,
-  BoolPropEq_mut_rect.
-
-Let _BoolRedEqInductionType :=
-  ltac:(let ind := fresh "ind" in
-      pose (ind := _BoolRedEqInduction);
-      let ind_ty := type of ind in
-      exact ind_ty).
-
-Let BoolRedEqInductionType :=
-  ltac: (let ind := eval cbv delta [_BoolRedEqInductionType] zeta
-    in _BoolRedEqInductionType in
-    let ind' := polymorphise ind in
-  exact ind').
-
-(* KM: looks like there is a bunch of polymorphic universes appearing there... *)
-Lemma BoolRedEqInduction : BoolRedEqInductionType.
-Proof.
-  intros ???? PRedEq PPropEq **; split; now apply (_BoolRedEqInduction _ _ _ _ PRedEq PPropEq).
-Defined.
-*)
 End BoolRedTmEq.
 Arguments BoolRedTmEq {_ _ _ _ _ _ _ _ _ _}.
 Arguments BoolPropEq {_ _ _ _ _ _ _}.
@@ -1759,7 +1709,6 @@ Section EmptyPropProperties.
 
 End EmptyPropProperties.
 
-(* A&Y: We prove the hand-crafted induction principles here: *)
 
 Lemma EmptyRedInduction :
   forall {ta : tag} {H : WfType ta} {H0 : RedType ta} {H1 : Typing ta}

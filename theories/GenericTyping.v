@@ -173,18 +173,6 @@ Notation "[ |-[ ta  ] Γ ≅ Δ ]< l >" := (ConvCtx (ta := ta) l Γ Δ) : typing
   tyr_wf_r tyr_wf_red tmr_wf_r tmr_wf_red
   : gen_typing.
 
-(* #[export] Hint Extern 1 =>
-  match goal with
-    | H : [ _ |- _ ▹h _ ] |- _ => destruct H
-    |  H : [ _ |- _ ↘ _ ] |- _ => destruct H
-    |  H : [ _ |- _ ↘ _ : _ ] |- _ => destruct H
-    |  H : [ _ |- _ :≅: _ ] |- _ => destruct H
-    |  H : [ _ |- _ :≅: _ : _] |- _ => destruct H
-    |  H : [ _ |- _ :⤳*: _ ] |- _ => destruct H
-    |  H : [ _ |- _ :⤳*: _ : _ ] |- _ => destruct H
-  end
-  : gen_typing. *)
-
 (** ** Properties of the abstract interface *)
 
 Section GenericTyping.
@@ -1076,8 +1064,6 @@ Section GenericConsequences.
     [Γ |- idterm A : arr A A]< l >.
   Proof.
     intros.
-    (* eapply ty_conv. *)
-    (* 2: eapply convty_simple_arr; cycle 1; tea. *)
     eapply ty_lam; tea.
     now eapply ty_var0.
   Qed.

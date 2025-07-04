@@ -50,7 +50,7 @@ Definition sne_ind l
   (P : forall r : term, snf r -> Prop)
   (Q : forall r : term, sne r -> Prop) := sne_rect l P Q.
 
-(* A&Y: add as many ps as you added new constructors for snf and sne in total *)
+(* Add as many ps as you added new constructors for snf and sne in total *)
 Definition snf_sne_rect l P Q p1 p2 p3 p4 p5 p6 p7 p8 p9 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p20 p21 :=
   pair 
     (snf_rect l P Q p1 p2 p3 p4 p5 p6 p7 p8 p9 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p20 p21)
