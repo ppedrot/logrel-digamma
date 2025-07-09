@@ -14,7 +14,7 @@ TL;DR HOWTO INSTALL
 ```
 opam switch create . --empty
 eval $(opam env)
-opam install ocaml-base-compiler=4.14.3
+opam install ocaml-base-compiler=4.14.2
 opam repo --this-switch add coq-released https://coq.inria.fr/opam/released
 opam install . --deps-only
 make
