@@ -6,7 +6,7 @@ bug-reports: "https://github.com/CoqHott/logrel-coq/issues"
 authors: ["anon@anon.com"]
 license: "MIT"
 depends: [
-  "coq" { >= "8.16" & < "8.17~" }
+  "coq" { >= "8.19" & < "8.20~" }
   "coq-smpl"
   "coq-equations" { >= "1.3" }
 ]
